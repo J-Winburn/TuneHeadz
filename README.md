@@ -27,4 +27,3 @@ A simple `Next.js` frontend that searches the Spotify API for songs and artists.
 ## Spotify credentials
 
 Create an app at the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) to get your client ID and client secret.
-
