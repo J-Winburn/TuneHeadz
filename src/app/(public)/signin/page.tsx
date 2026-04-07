@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function SignInPage() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -32,24 +35,19 @@ export default function SignInPage() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/auth/signin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
+      const result = await signIn("credentials", {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Sign in failed");
+      if (result?.error) {
+        setError(result.error);
+      } else if (result?.ok) {
+        router.push("/search");
       }
-
-      // Success - redirect to dashboard
-      window.location.href = "/search";
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to sign in");
+      setError("Failed to sign in");
     } finally {
       setLoading(false);
     }
@@ -71,7 +69,7 @@ export default function SignInPage() {
             Access your TuneHeadz account and discover music
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-zinc-200">
@@ -84,7 +82,6 @@ export default function SignInPage() {
                 placeholder="you@example.com"
                 value={formData.email}
                 onChange={handleChange}
-                required
               />
             </div>
 
@@ -100,7 +97,6 @@ export default function SignInPage() {
                 placeholder="••••••••"
                 value={formData.password}
                 onChange={handleChange}
-                required
               />
             </div>
 
@@ -136,24 +132,14 @@ export default function SignInPage() {
             </div>
 
             {/* Social Auth Buttons */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <button
                 type="button"
-                className="py-3 rounded-lg border border-zinc-800 hover:bg-zinc-800/50 transition flex items-center justify-center"
+                onClick={() => signIn("spotify", { callbackUrl: "/search" })}
+                className="py-3 rounded-lg border border-zinc-800 hover:bg-zinc-800/50 transition flex items-center justify-center gap-2 font-medium"
               >
-                <span className="text-xl">G</span>
-              </button>
-              <button
-                type="button"
-                className="py-3 rounded-lg border border-zinc-800 hover:bg-zinc-800/50 transition flex items-center justify-center"
-              >
-                <span className="text-xl">f</span>
-              </button>
-              <button
-                type="button"
-                className="py-3 rounded-lg border border-zinc-800 hover:bg-zinc-800/50 transition flex items-center justify-center"
-              >
-                <span className="text-xl">🍎</span>
+                <span className="text-xl">🎵</span>
+                Link to Spotify
               </button>
             </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 
 export default function LogoutModal({
   isOpen,
@@ -10,14 +10,12 @@ export default function LogoutModal({
   isOpen: boolean;
   onClose: () => void;
 }) {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogout = async () => {
     setIsLoading(true);
     try {
-      await fetch("/api/auth/logout");
-      router.push("/landing");
+      await signOut({ callbackUrl: "/" });
     } catch (error) {
       console.error("Logout failed:", error);
       setIsLoading(false);

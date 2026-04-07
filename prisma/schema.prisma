@@ -3,7 +3,7 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -23,6 +23,10 @@ model User {
   // Display & profile
   displayName     String?
   profileImage    String?
+  bio             String?
+  theme           String    @default("dark")  // "dark" or "light"
+  timezone        String    @default("UTC")
+  notificationSettings Json  @default("{\"emailNotifications\": true, \"pushNotifications\": false}")
 
   // Spotify integration (optional)
   spotifyId       String?   @unique

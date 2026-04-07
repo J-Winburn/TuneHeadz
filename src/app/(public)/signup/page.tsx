@@ -96,7 +96,7 @@ export default function SignUpPage() {
           <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
           <p className="text-zinc-400 mb-6">Join TuneHeadz and start your music journey</p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             {/* First Name */}
             <div className="space-y-2">
               <Label htmlFor="firstName" className="text-zinc-200">
@@ -109,7 +109,6 @@ export default function SignUpPage() {
                 placeholder="John"
                 value={formData.firstName}
                 onChange={handleChange}
-                required
               />
             </div>
 
@@ -125,7 +124,6 @@ export default function SignUpPage() {
                 placeholder="Doe"
                 value={formData.lastName}
                 onChange={handleChange}
-                required
               />
             </div>
 
@@ -141,7 +139,6 @@ export default function SignUpPage() {
                 placeholder="you@example.com"
                 value={formData.email}
                 onChange={handleChange}
-                required
               />
             </div>
 
@@ -153,7 +150,7 @@ export default function SignUpPage() {
               <Input
                 id="phone"
                 name="phone"
-                type="tel"
+                type="text"
                 placeholder="+1 (555) 123-4567"
                 value={formData.phone}
                 onChange={handleChange}
@@ -172,7 +169,6 @@ export default function SignUpPage() {
                 placeholder="••••••••"
                 value={formData.password}
                 onChange={handleChange}
-                required
               />
             </div>
 
@@ -188,7 +184,6 @@ export default function SignUpPage() {
                 placeholder="••••••••"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                required
               />
             </div>
 

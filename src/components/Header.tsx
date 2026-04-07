@@ -1,31 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useSession, signOut } from "next-auth/react";
 import LogoutModal from "./LogoutModal";
 
 export default function Header() {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: session, status } = useSession();
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await fetch("/api/user/profile");
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data);
-        }
-      } catch {
-        // Not logged in
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
-  }, []);
+  const loading = status === "loading";
 
   return (
     <>
@@ -36,7 +19,7 @@ export default function Header() {
           </Link>
 
           <nav className="flex items-center gap-6">
-            {user && (
+            {session?.user && (
               <>
                 <Link
                   href="/favorites"
@@ -56,14 +39,20 @@ export default function Header() {
                 >
                   Generate
                 </Link>
+                <Link
+                  href="/profile"
+                  className="text-sm text-zinc-400 hover:text-zinc-200 transition"
+                >
+                  Profile
+                </Link>
               </>
             )}
 
             {!loading && (
               <>
-                {user ? (
+                {session?.user ? (
                   <div className="flex items-center gap-4">
-                    <span className="text-sm text-zinc-300">{user.displayName || user.spotifyId}</span>
+                    <span className="text-sm text-zinc-300">{session.user.name || session.user.email}</span>
                     <button
                       onClick={() => setLogoutModalOpen(true)}
                       className="rounded-full px-4 py-2 text-sm font-medium text-black transition"
@@ -75,15 +64,15 @@ export default function Header() {
                     </button>
                   </div>
                 ) : (
-                  <a
-                    href="/api/auth/login"
+                  <Link
+                    href="/signin"
                     className="rounded-full px-4 py-2 text-sm font-medium text-black transition"
                     style={{ backgroundColor: "#fb3d93" }}
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#e63a85")}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#fb3d93")}
                   >
                     Link to Spotify
-                  </a>
+                  </Link>
                 )}
               </>
             )}

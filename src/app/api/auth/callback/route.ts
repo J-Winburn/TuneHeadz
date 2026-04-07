@@ -61,17 +61,17 @@ export async function GET(request: NextRequest) {
         displayName: spotifyUser.display_name || null,
         email: spotifyUser.email || null,
         profileImage: spotifyUser.images?.[0]?.url || null,
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        tokenExpiresAt: expiryTime,
+        spotifyAccessToken: tokens.access_token,
+        spotifyRefreshToken: tokens.refresh_token,
+        spotifyTokenExpiresAt: expiryTime,
       },
       update: {
         displayName: spotifyUser.display_name || null,
         email: spotifyUser.email || null,
         profileImage: spotifyUser.images?.[0]?.url || null,
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        tokenExpiresAt: expiryTime,
+        spotifyAccessToken: tokens.access_token,
+        spotifyRefreshToken: tokens.refresh_token,
+        spotifyTokenExpiresAt: expiryTime,
       },
     });
 
