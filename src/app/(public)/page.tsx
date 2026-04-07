@@ -50,6 +50,9 @@ export default function WelcomePage() {
             <a href="#journal" className={`uppercase hover:text-[#fb3d93] transition`}>
               Journal
             </a>
+            <Link href="/generate" className={`uppercase hover:text-[#fb3d93] transition`}>
+              Generate Music
+            </Link>
           </div>
 
           {/* Search Bar */}

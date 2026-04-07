@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 
 type PredictionStatus = "starting" | "processing" | "succeeded" | "failed" | "canceled";
 
@@ -32,37 +31,6 @@ export async function GET(
 
   const prediction = (await response.json()) as ReplicatePrediction;
   const audioUrl = Array.isArray(prediction.output) ? prediction.output[0] : (prediction.output ?? null);
-
-  // Update database if generation is complete
-  if (prediction.status === "succeeded" && audioUrl) {
-    try {
-      await prisma.generatedTrack.updateMany({
-        where: {
-          status: "starting",
-        },
-        data: {
-          audioUrl,
-          status: "succeeded",
-        },
-      });
-    } catch {
-      // Silently fail if database update doesn't work
-    }
-  } else if (prediction.status === "failed") {
-    try {
-      await prisma.generatedTrack.updateMany({
-        where: {
-          status: "starting",
-        },
-        data: {
-          status: "failed",
-          error: prediction.error,
-        },
-      });
-    } catch {
-      // Silently fail if database update doesn't work
-    }
-  }
 
   return NextResponse.json({
     status: prediction.status,

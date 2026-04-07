@@ -149,7 +149,7 @@ export default function GeneratePage() {
               href="/"
               className="text-sm text-zinc-400 transition hover:text-zinc-200"
             >
-              ← Back to Search
+              ← Back to Homepage
             </Link>
           </div>
 
