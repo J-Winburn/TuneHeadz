@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/get-current-user";
+import { prisma } from "@/lib/prisma";
 
 const REPLICATE_API_URL = "https://api.replicate.com/v1/predictions";
 // Latest meta/musicgen version — update if Replicate publishes a newer one
@@ -50,6 +52,21 @@ export async function POST(request: NextRequest) {
     }
 
     const prediction = (await response.json()) as { id: string };
+
+    // Save generation request to database if user is authenticated
+    const user = await getCurrentUser();
+    if (user) {
+      await prisma.generatedTrack.create({
+        data: {
+          userId: user.id,
+          prompt,
+          duration,
+          audioUrl: "",
+          status: "starting",
+        },
+      });
+    }
+
     return NextResponse.json({ id: prediction.id });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unexpected server error.";

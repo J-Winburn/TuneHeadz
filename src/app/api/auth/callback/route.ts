@@ -7,6 +7,7 @@ import {
   COOKIE_TOKEN_EXPIRY,
   COOKIE_STATE,
 } from "@/lib/spotify-auth";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
@@ -32,8 +33,49 @@ export async function GET(request: NextRequest) {
   try {
     const tokens = await exchangeCodeForTokens(code);
 
+    // Fetch user profile from Spotify
+    const userResponse = await fetch("https://api.spotify.com/v1/me", {
+      headers: {
+        Authorization: `Bearer ${tokens.access_token}`,
+      },
+    });
+
+    if (!userResponse.ok) {
+      throw new Error("Failed to fetch user profile from Spotify");
+    }
+
+    const spotifyUser = (await userResponse.json()) as {
+      id: string;
+      display_name?: string;
+      email?: string;
+      images?: Array<{ url: string }>;
+    };
+
+    const expiryTime = new Date(Date.now() + tokens.expires_in * 1000);
+
+    // Create or update user in database
+    await prisma.user.upsert({
+      where: { spotifyId: spotifyUser.id },
+      create: {
+        spotifyId: spotifyUser.id,
+        displayName: spotifyUser.display_name || null,
+        email: spotifyUser.email || null,
+        profileImage: spotifyUser.images?.[0]?.url || null,
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        tokenExpiresAt: expiryTime,
+      },
+      update: {
+        displayName: spotifyUser.display_name || null,
+        email: spotifyUser.email || null,
+        profileImage: spotifyUser.images?.[0]?.url || null,
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        tokenExpiresAt: expiryTime,
+      },
+    });
+
     const response = NextResponse.redirect(new URL("/", request.url));
-    const expiryTime = Date.now() + tokens.expires_in * 1000;
 
     cookieStore.set(COOKIE_ACCESS_TOKEN, tokens.access_token, {
       httpOnly: true,
@@ -48,7 +90,7 @@ export async function GET(request: NextRequest) {
       sameSite: "lax",
     });
 
-    cookieStore.set(COOKIE_TOKEN_EXPIRY, expiryTime.toString(), {
+    cookieStore.set(COOKIE_TOKEN_EXPIRY, expiryTime.getTime().toString(), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

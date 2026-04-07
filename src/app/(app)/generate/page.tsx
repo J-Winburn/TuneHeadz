@@ -142,7 +142,7 @@ export default function GeneratePage() {
       <div className="mx-auto max-w-2xl">
         <div className="rounded-3xl border border-white/10 bg-zinc-950/80 p-6 shadow-2xl backdrop-blur md:p-8">
           <div className="flex items-center justify-between">
-            <span className="rounded-full bg-green-500/15 px-3 py-1 text-sm font-medium text-green-300">
+            <span className="rounded-full bg-[#fb3d93]/15 px-3 py-1 text-sm font-medium text-[#fb3d93]">
               AI Music Generation
             </span>
             <Link
@@ -168,7 +168,7 @@ export default function GeneratePage() {
               placeholder="e.g. chill lo-fi hip hop, 80 BPM, warm vinyl crackle, rainy evening mood"
               rows={3}
               disabled={loading}
-              className="w-full resize-none rounded-2xl border border-white/10 bg-zinc-900 px-4 py-3 text-base outline-none transition focus:border-green-400 disabled:opacity-50"
+              className="w-full resize-none rounded-2xl border border-white/10 bg-zinc-900 px-4 py-3 text-base outline-none transition focus:border-[#fb3d93] disabled:opacity-50"
             />
 
             <div className="flex flex-wrap items-center gap-3">
@@ -181,7 +181,7 @@ export default function GeneratePage() {
                   onClick={() => setDuration(d)}
                   className={`rounded-full px-4 py-2 text-sm font-medium transition disabled:opacity-50 ${
                     duration === d
-                      ? "bg-green-500 text-black"
+                      ? "bg-[#fb3d93] text-black"
                       : "bg-zinc-900 text-zinc-200 hover:bg-zinc-800"
                   }`}
                 >
@@ -193,7 +193,7 @@ export default function GeneratePage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-2xl bg-green-500 py-3 font-semibold text-black transition hover:bg-green-400 disabled:cursor-not-allowed disabled:bg-green-300"
+              className="w-full rounded-2xl bg-[#fb3d93] py-3 font-semibold text-black transition hover:bg-[#e63a85] disabled:cursor-not-allowed disabled:bg-green-300"
             >
               {loading ? "Generating…" : "Generate"}
             </button>
@@ -207,7 +207,7 @@ export default function GeneratePage() {
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
                 <div
-                  className="h-full rounded-full bg-green-500 transition-all duration-300"
+                  className="h-full rounded-full bg-[#fb3d93] transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -228,7 +228,7 @@ export default function GeneratePage() {
             <a
               href={`/api/audio?url=${encodeURIComponent(audioUrl)}`}
               download="generated-music.wav"
-              className="mt-4 inline-block text-sm text-green-300 hover:text-green-200"
+              className="mt-4 inline-block text-sm text-[#fb3d93] hover:text-green-200"
             >
               Download
             </a>

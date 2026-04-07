@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Header from "@/components/Header";
 
 export const metadata: Metadata = {
-  title: "Spotify Search",
-  description: "Search Spotify songs and artists with a simple Next.js frontend.",
+  title: "TuneHeadz - Music Discovery & AI Generation",
+  description: "Discover music, generate AI tracks, and build playlists with TuneHeadz",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
@@ -15,7 +17,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Header />
         {children}
       </body>
     </html>

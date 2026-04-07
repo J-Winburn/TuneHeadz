@@ -19,6 +19,25 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [savedTrackIds, setSavedTrackIds] = useState<Set<string>>(new Set());
+
+  // Load saved tracks on mount
+  const loadSavedTracks = async () => {
+    try {
+      const response = await fetch("/api/favorites");
+      if (response.ok) {
+        const data = (await response.json()) as {
+          saved: Array<{ spotifyTrackId: string }>;
+        };
+        setSavedTrackIds(
+          new Set(data.saved.map((track) => track.spotifyTrackId))
+        );
+      }
+    } catch {
+      // Silently fail
+    }
+  };
+
   const handleSearch = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -41,6 +60,7 @@ export default function Home() {
       }
 
       setResults(data);
+      await loadSavedTracks();
     } catch (err) {
       setResults({ tracks: [], artists: [] });
       setError(err instanceof Error ? err.message : "Unexpected error.");
@@ -49,12 +69,30 @@ export default function Home() {
     }
   };
 
+  const handleSaveTrack = async (track: Track) => {
+    try {
+      const response = await fetch("/api/favorites/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(track),
+      });
+
+      if (response.ok) {
+        setSavedTrackIds((prev) => new Set([...prev, track.id]));
+      } else {
+        setError("Failed to save track");
+      }
+    } catch {
+      setError("Failed to save track");
+    }
+  };
+
   return (
     <main className="min-h-screen px-4 py-10 text-zinc-50">
       <div className="mx-auto max-w-6xl">
         <div className="rounded-3xl border border-white/10 bg-zinc-950/80 p-6 shadow-2xl backdrop-blur md:p-8">
           <div className="flex items-center justify-between">
-            <span className="rounded-full bg-green-500/15 px-3 py-1 text-sm font-medium text-green-300">
+            <span className="rounded-full bg-[#fb3d93]/15 px-3 py-1 text-sm font-medium text-[#fb3d93]">
               Spotify API Demo
             </span>
             <Link
@@ -83,7 +121,7 @@ export default function Home() {
               <button
                 type="submit"
                 disabled={loading}
-                className="rounded-2xl bg-green-500 px-5 py-3 font-semibold text-black transition hover:bg-green-400 disabled:cursor-not-allowed disabled:bg-green-300"
+                className="rounded-2xl bg-[#fb3d93] px-5 py-3 font-semibold text-black transition hover:bg-[#e63a85] disabled:cursor-not-allowed disabled:bg-green-300"
               >
                 {loading ? "Searching..." : "Search"}
               </button>
@@ -97,7 +135,7 @@ export default function Home() {
                   onClick={() => setScope(item.value)}
                   className={`rounded-full px-4 py-2 text-sm font-medium transition ${
                     scope === item.value
-                      ? "bg-green-500 text-black"
+                      ? "bg-[#fb3d93] text-black"
                       : "bg-zinc-900 text-zinc-200 hover:bg-zinc-800"
                   }`}
                 >
@@ -135,22 +173,34 @@ export default function Home() {
                       alt={track.name}
                       className="h-16 w-16 rounded-xl object-cover"
                     />
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <h3 className="truncate font-semibold">{track.name}</h3>
                       <p className="text-sm text-zinc-300">
                         {track.artists.map((artist) => artist.name).join(", ")}
                       </p>
                       <p className="text-sm text-zinc-500">{track.album?.name}</p>
-                      {track.external_urls?.spotify ? (
-                        <a
-                          href={track.external_urls.spotify}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-1 inline-block text-sm text-green-300 hover:text-green-200"
+                      <div className="mt-1 flex gap-2">
+                        {track.external_urls?.spotify ? (
+                          <a
+                            href={track.external_urls.spotify}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-sm text-[#fb3d93] hover:text-green-200"
+                          >
+                            Open in Spotify
+                          </a>
+                        ) : null}
+                        <button
+                          onClick={() => handleSaveTrack(track)}
+                          className={`text-sm font-medium ${
+                            savedTrackIds.has(track.id)
+                              ? "text-yellow-300 hover:text-yellow-200"
+                              : "text-zinc-400 hover:text-zinc-200"
+                          }`}
                         >
-                          Open in Spotify
-                        </a>
-                      ) : null}
+                          {savedTrackIds.has(track.id) ? "★ Saved" : "☆ Save"}
+                        </button>
+                      </div>
                     </div>
                   </article>
                 ))
@@ -193,7 +243,7 @@ export default function Home() {
                           href={artist.external_urls.spotify}
                           target="_blank"
                           rel="noreferrer"
-                          className="mt-1 inline-block text-sm text-green-300 hover:text-green-200"
+                          className="mt-1 inline-block text-sm text-[#fb3d93] hover:text-green-200"
                         >
                           View profile
                         </a>

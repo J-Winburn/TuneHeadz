@@ -1,42 +1,97 @@
-import { cookies } from "next/headers";
-import { getValidUserToken, getSpotifyUser } from "@/lib/spotify-auth";
+"use client";
 
-export default async function Header() {
-  const cookieStore = await cookies();
-  const token = await getValidUserToken(cookieStore);
-  let user = null;
+import Link from "next/link";
+import { useState, useEffect } from "react";
+import LogoutModal from "./LogoutModal";
 
-  if (token) {
-    try {
-      user = await getSpotifyUser(token);
-    } catch {
-      // If fetching user fails, we'll just show login button
-    }
-  }
+export default function Header() {
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch("/api/user/profile");
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data);
+        }
+      } catch {
+        // Not logged in
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   return (
-    <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
-      <h1 className="text-xl font-bold text-green-500">Spotify Search</h1>
-      <div>
-        {user ? (
-          <div className="flex items-center gap-4">
-            <span className="text-foreground">{user.display_name || user.id}</span>
-            <a
-              href="/api/auth/logout"
-              className="px-4 py-2 bg-green-500 text-black rounded font-medium hover:bg-green-600 transition"
-            >
-              Log out
-            </a>
-          </div>
-        ) : (
-          <a
-            href="/api/auth/login"
-            className="px-4 py-2 bg-green-500 text-black rounded font-medium hover:bg-green-600 transition"
-          >
-            Log in with Spotify
-          </a>
-        )}
-      </div>
-    </header>
+    <>
+      <header className="sticky top-0 z-40 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur">
+        <div className="flex items-center justify-between px-6 py-4">
+          <Link href="/" className="transition hover:opacity-80">
+            <img src="/assets/logo.png" alt="TuneHeadz" className="h-12 w-auto" />
+          </Link>
+
+          <nav className="flex items-center gap-6">
+            {user && (
+              <>
+                <Link
+                  href="/favorites"
+                  className="text-sm text-zinc-400 hover:text-zinc-200 transition"
+                >
+                  Favorites
+                </Link>
+                <Link
+                  href="/history"
+                  className="text-sm text-zinc-400 hover:text-zinc-200 transition"
+                >
+                  History
+                </Link>
+                <Link
+                  href="/generate"
+                  className="text-sm text-zinc-400 hover:text-zinc-200 transition"
+                >
+                  Generate
+                </Link>
+              </>
+            )}
+
+            {!loading && (
+              <>
+                {user ? (
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm text-zinc-300">{user.displayName || user.spotifyId}</span>
+                    <button
+                      onClick={() => setLogoutModalOpen(true)}
+                      className="rounded-full px-4 py-2 text-sm font-medium text-black transition"
+                      style={{ backgroundColor: "#fb3d93" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#e63a85")}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#fb3d93")}
+                    >
+                      Log out
+                    </button>
+                  </div>
+                ) : (
+                  <a
+                    href="/api/auth/login"
+                    className="rounded-full px-4 py-2 text-sm font-medium text-black transition"
+                    style={{ backgroundColor: "#fb3d93" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#e63a85")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#fb3d93")}
+                  >
+                    Link to Spotify
+                  </a>
+                )}
+              </>
+            )}
+          </nav>
+        </div>
+      </header>
+
+      <LogoutModal isOpen={logoutModalOpen} onClose={() => setLogoutModalOpen(false)} />
+    </>
   );
 }

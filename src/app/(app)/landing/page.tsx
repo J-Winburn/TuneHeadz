@@ -102,19 +102,19 @@ export default function Landing() {
           </Link>
 
           <nav className="flex items-center gap-8">
-            <Link href="#" className="text-sm font-semibold hover:text-green-500 transition">
+            <Link href="#" className="text-sm font-semibold hover:text-#fb3d93 transition">
               SIGN IN
             </Link>
-            <Link href="#" className="text-sm font-semibold hover:text-green-500 transition">
+            <Link href="#" className="text-sm font-semibold hover:text-#fb3d93 transition">
               CREATE ACCOUNT
             </Link>
-            <Link href="#" className="text-sm font-semibold hover:text-green-500 transition">
+            <Link href="#" className="text-sm font-semibold hover:text-#fb3d93 transition">
               ALBUMS
             </Link>
-            <Link href="#" className="text-sm font-semibold hover:text-green-500 transition">
+            <Link href="#" className="text-sm font-semibold hover:text-#fb3d93 transition">
               LISTS
             </Link>
-            <Link href="#" className="text-sm font-semibold hover:text-green-500 transition">
+            <Link href="#" className="text-sm font-semibold hover:text-#fb3d93 transition">
               JOURNAL
             </Link>
           </nav>
@@ -125,12 +125,12 @@ export default function Landing() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search..."
-              className="rounded-full bg-zinc-700 px-4 py-2 text-sm text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="rounded-full bg-zinc-700 px-4 py-2 text-sm text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-#fb3d93"
             />
             <button
               type="submit"
               disabled={searching}
-              className="rounded-full bg-green-500 p-2 text-black hover:bg-green-600 disabled:opacity-50"
+              className="rounded-full bg-#fb3d93 p-2 text-black hover:bg-#e63a85 disabled:opacity-50"
             >
               🔍
             </button>
@@ -144,7 +144,7 @@ export default function Landing() {
             onClick={() => setApiSource("spotify")}
             className={`px-4 py-2 rounded text-sm font-semibold transition ${
               apiSource === "spotify"
-                ? "bg-green-500 text-black"
+                ? "bg-#fb3d93 text-black"
                 : "bg-zinc-800 text-white hover:bg-zinc-700"
             }`}
           >
@@ -154,7 +154,7 @@ export default function Landing() {
             onClick={() => setApiSource("musicbrainz")}
             className={`px-4 py-2 rounded text-sm font-semibold transition ${
               apiSource === "musicbrainz"
-                ? "bg-green-500 text-black"
+                ? "bg-#fb3d93 text-black"
                 : "bg-zinc-800 text-white hover:bg-zinc-700"
             }`}
           >
@@ -184,7 +184,7 @@ export default function Landing() {
                   (album, idx) => (
                     <div
                       key={`row1-${idx}`}
-                      className="flex-shrink-0 w-32 h-40 rounded-lg overflow-hidden bg-zinc-800 hover:shadow-lg hover:shadow-green-500/50 transition cursor-pointer"
+                      className="flex-shrink-0 w-32 h-40 rounded-lg overflow-hidden bg-zinc-800 hover:shadow-lg hover:shadow-#fb3d93/50 transition cursor-pointer"
                     >
                       <img
                         src={album.image}
@@ -208,7 +208,7 @@ export default function Landing() {
                   (album, idx) => (
                     <div
                       key={`row2-${idx}`}
-                      className="flex-shrink-0 w-32 h-40 rounded-lg overflow-hidden bg-zinc-800 hover:shadow-lg hover:shadow-green-500/50 transition cursor-pointer"
+                      className="flex-shrink-0 w-32 h-40 rounded-lg overflow-hidden bg-zinc-800 hover:shadow-lg hover:shadow-#fb3d93/50 transition cursor-pointer"
                     >
                       <img
                         src={album.image}
@@ -239,7 +239,7 @@ export default function Landing() {
         <div className="mt-12 text-center pb-8">
           <Link
             href="/"
-            className="inline-block rounded-lg bg-green-500 px-8 py-3 font-semibold text-black hover:bg-green-600 transition"
+            className="inline-block rounded-lg bg-#fb3d93 px-8 py-3 font-semibold text-black hover:bg-#e63a85 transition"
           >
             Back to Search
           </Link>

@@ -1,14 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --background: #09090b;
-  --foreground: #f4f4f5;
+  --background-dark: #000000;
+  --background-light: #ffffff;
+  --foreground-dark: #f4f4f5;
+  --foreground-light: #000000;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  background:
-    radial-gradient(circle at top, rgba(29, 185, 84, 0.25), transparent 0, transparent 45%),
-    var(--background);
-  color: var(--foreground);
+  background-color: var(--background-dark);
+  color: var(--foreground-dark);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+body.light {
+  background-color: var(--background-light);
+  color: var(--foreground-light);
 }

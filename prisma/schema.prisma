@@ -1,0 +1,126 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id              String    @id @default(cuid())
+
+  // Native TuneHeadz account fields
+  email           String?   @unique
+  password        String?   // hashed password for native auth
+  firstName       String?
+  lastName        String?
+  phone           String?
+
+  // Display & profile
+  displayName     String?
+  profileImage    String?
+
+  // Spotify integration (optional)
+  spotifyId       String?   @unique
+  spotifyAccessToken     String?
+  spotifyRefreshToken    String?
+  spotifyTokenExpiresAt  DateTime?
+
+  // Metadata
+  authProvider    String    @default("native") // "native" or "spotify" or both
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  savedTracks     SavedTrack[]
+  generatedTracks GeneratedTrack[]
+  playlists       Playlist[]
+  searchHistory   SearchHistory[]
+
+  @@index([email])
+  @@index([spotifyId])
+}
+
+model SavedTrack {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  spotifyTrackId String
+  trackName      String
+  artists        String    // JSON array stored as string
+  albumName      String?
+  imageUrl       String?
+
+  savedAt   DateTime  @default(now())
+
+  @@unique([userId, spotifyTrackId])
+  @@index([userId])
+}
+
+model GeneratedTrack {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  prompt    String
+  duration  Int
+  audioUrl  String
+  status    String    @default("succeeded")
+  error     String?
+
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Playlist {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  isPublic    Boolean   @default(false)
+
+  tracks      PlaylistTrack[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model PlaylistTrack {
+  id          String    @id @default(cuid())
+  playlistId  String
+  playlist    Playlist  @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+
+  spotifyTrackId String
+  trackName      String
+  artists        String    // JSON array
+  albumName      String?
+  imageUrl       String?
+
+  addedAt     DateTime  @default(now())
+
+  @@index([playlistId])
+}
+
+model SearchHistory {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  query     String
+  type      String    // "track" | "artist" | "all"
+
+  searchedAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([searchedAt])
+}
