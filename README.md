@@ -21,6 +21,7 @@ cp .env.example .env.local
 ```
 
 Edit `.env.local` and add:
+
 ```
 SPOTIFY_CLIENT_ID=your_client_id_here
 SPOTIFY_CLIENT_SECRET=your_client_secret_here
@@ -28,6 +29,8 @@ SPOTIFY_REDIRECT_URI=http://127.0.0.1:3000/api/auth/callback/spotify
 NEXTAUTH_URL=http://127.0.0.1:3000
 NEXTAUTH_SECRET=your-own-random-secret
 ```
+TO GENERATE NEXTAUTH_SECRET run `npx auth secret`
+
 
 ### 4. Register Redirect URI in Spotify
 1. In your Spotify app settings, find **"Redirect URIs"**
