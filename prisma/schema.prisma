@@ -26,6 +26,7 @@ model User {
   bio             String?
   theme           String    @default("dark")  // "dark" or "light"
   timezone        String    @default("UTC")
+  musicGenres     String[]  @default([])
   notificationSettings Json  @default("{\"emailNotifications\": true, \"pushNotifications\": false}")
   pinnedItems          Json  @default("[]")
 

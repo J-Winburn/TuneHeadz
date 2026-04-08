@@ -19,9 +19,10 @@ export async function GET() {
       phone: user.phone,
       profileImage: user.profileImage,
       bio: user.bio,
-      timezone: user.timezone,
       theme: user.theme,
+      musicGenres: user.musicGenres,
       createdAt: user.createdAt,
+      pinnedItems: user.pinnedItems,
     });
   } catch (error) {
     console.error(error);
@@ -49,8 +50,10 @@ export async function PUT(request: NextRequest) {
         email: body.email || user.email,
         phone: body.phone || user.phone,
         bio: body.bio || user.bio,
-        timezone: body.timezone || user.timezone,
         displayName: body.displayName || user.displayName,
+        ...(body.profileImage !== undefined && { profileImage: body.profileImage }),
+        ...(body.pinnedItems !== undefined && { pinnedItems: body.pinnedItems }),
+        ...(body.musicGenres !== undefined && { musicGenres: body.musicGenres }),
       },
     });
 
@@ -64,9 +67,10 @@ export async function PUT(request: NextRequest) {
       phone: updatedUser.phone,
       profileImage: updatedUser.profileImage,
       bio: updatedUser.bio,
-      timezone: updatedUser.timezone,
       theme: updatedUser.theme,
+      musicGenres: updatedUser.musicGenres,
       createdAt: updatedUser.createdAt,
+      pinnedItems: updatedUser.pinnedItems,
     });
   } catch (error) {
     console.error(error);
