@@ -229,17 +229,6 @@ export default function ProfilePage() {
   };
 
   const handleConnectSpotify = () => {
-    const currentUrl = new URL(window.location.href);
-    // Keep OAuth start host aligned with callback host so link cookies are available.
-    if (process.env.NODE_ENV === "development" && currentUrl.hostname === "localhost") {
-      currentUrl.hostname = "127.0.0.1";
-      currentUrl.pathname = "/api/spotify/link/start";
-      currentUrl.search = "";
-      currentUrl.hash = "";
-      window.location.href = currentUrl.toString();
-      return;
-    }
-
     window.location.href = "/api/spotify/link/start";
   };
 

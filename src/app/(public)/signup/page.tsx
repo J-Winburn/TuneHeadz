@@ -67,7 +67,7 @@ export default function SignUpPage() {
       setSuccess(true);
       // Redirect after 2 seconds
       setTimeout(() => {
-        window.location.href = "/dashboard";
+        window.location.href = "/search";
       }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create account");
@@ -83,7 +83,7 @@ export default function SignUpPage() {
           <div className="text-6xl mb-4">🎉</div>
           <h1 className="text-3xl font-bold text-white mb-2">Welcome to TuneHeadz!</h1>
           <p className="text-zinc-400 mb-4">Your account has been created successfully.</p>
-          <p className="text-sm text-zinc-500">Redirecting to dashboard...</p>
+          <p className="text-sm text-zinc-500">Redirecting to search...</p>
         </div>
       </main>
     );

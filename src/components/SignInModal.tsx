@@ -40,8 +40,8 @@ export function SignInModal({
         throw new Error(data.error || "Sign in failed");
       }
 
-      // Success - redirect to dashboard
-      window.location.href = "/dashboard";
+      // Success - redirect to search
+      window.location.href = "/search";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to sign in");
     } finally {
