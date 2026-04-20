@@ -307,7 +307,7 @@ export default function ProfilePage() {
       <div className="max-w-2xl mx-auto">
         <div className="bg-zinc-900 rounded-lg border border-zinc-800">
           {/* Header */}
-          <div className="bg-gradient-to-r from-pink-600 to-pink-500 px-6 py-8">
+          <div className="bg-linear-to-r from-pink-600 to-pink-500 px-6 py-8">
             <div className="flex items-center gap-4">
               <div className="relative group">
                 {user.profileImage ? (
@@ -439,6 +439,11 @@ export default function ProfilePage() {
                   )}
                 </div>
 
+                {/* Spotify Stats Section */}
+                {user.spotifyId && (
+                  <SpotifyStatsSection />
+                )}
+
                 {/* Pinned Songs & Albums */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
@@ -500,9 +505,9 @@ export default function ProfilePage() {
                             className="w-full flex items-center gap-3 p-3 hover:bg-zinc-700 transition text-left"
                           >
                             {result.imageUrl ? (
-                              <img src={result.imageUrl} alt={result.name} className="w-10 h-10 rounded object-cover flex-shrink-0" />
+                              <img src={result.imageUrl} alt={result.name} className="w-10 h-10 rounded object-cover shrink-0" />
                             ) : (
-                              <div className="w-10 h-10 rounded bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                              <div className="w-10 h-10 rounded bg-zinc-700 flex items-center justify-center shrink-0">
                                 <span>🎵</span>
                               </div>
                             )}
@@ -511,7 +516,7 @@ export default function ProfilePage() {
                               <p className="text-xs text-zinc-400 truncate">{result.artist}</p>
                             </div>
                             {pinnedItems.find((p) => p.id === result.id) && (
-                              <span className="ml-auto text-xs text-pink-400 flex-shrink-0">Pinned</span>
+                              <span className="ml-auto text-xs text-pink-400 shrink-0">Pinned</span>
                             )}
                           </button>
                         ))}
@@ -531,9 +536,9 @@ export default function ProfilePage() {
                           className="flex items-center gap-3 bg-zinc-800 rounded-lg p-3 border border-zinc-700 group"
                         >
                           {item.imageUrl ? (
-                            <img src={item.imageUrl} alt={item.name} className="w-12 h-12 rounded object-cover flex-shrink-0" />
+                            <img src={item.imageUrl} alt={item.name} className="w-12 h-12 rounded object-cover shrink-0" />
                           ) : (
-                            <div className="w-12 h-12 rounded bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                            <div className="w-12 h-12 rounded bg-zinc-700 flex items-center justify-center shrink-0">
                               <span className="text-lg">🎵</span>
                             </div>
                           )}
@@ -555,7 +560,7 @@ export default function ProfilePage() {
                           </div>
                           <button
                             onClick={() => removePin(item.id)}
-                            className="text-zinc-600 hover:text-red-400 transition opacity-0 group-hover:opacity-100 flex-shrink-0"
+                            className="text-zinc-600 hover:text-red-400 transition opacity-0 group-hover:opacity-100 shrink-0"
                             title="Unpin"
                           >
                             ✕
@@ -703,3 +708,108 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+// Spotify Stats Section
+const SpotifyStatsSection = () => {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [timeRange, setTimeRange] = useState<'short_term' | 'medium_term' | 'long_term'>('medium_term');
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const fetchStats = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`/api/user/spotify-stats?time_range=${timeRange}`);
+        if (!res.ok) {
+          const payload = await res.json();
+          setError(payload.error || 'Failed to fetch stats');
+          setStats(null);
+          return;
+        }
+        const data = await res.json();
+        setStats(data);
+      } catch (e) {
+        setError('Failed to fetch stats');
+        setStats(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, [timeRange, open]);
+
+  return (
+    <div className="mt-10">
+      <button
+        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-pink-400 font-semibold mb-2 transition"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls="spotify-stats-panel"
+      >
+        <span>{open ? 'Hide' : 'Show'} Top Artists & Tracks</span>
+        <span className={`transition-transform ${open ? 'rotate-180' : ''}`}>▼</span>
+      </button>
+      {open && (
+        <div id="spotify-stats-panel">
+          <div className="flex gap-2 mb-4 mt-2">
+            <button
+              className={`px-3 py-1 rounded-full text-xs font-medium transition ${timeRange === 'short_term' ? 'bg-pink-500 text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
+              onClick={() => setTimeRange('short_term')}
+            >
+              4 Weeks
+            </button>
+            <button
+              className={`px-3 py-1 rounded-full text-xs font-medium transition ${timeRange === 'medium_term' ? 'bg-pink-500 text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
+              onClick={() => setTimeRange('medium_term')}
+            >
+              6 Months
+            </button>
+            <button
+              className={`px-3 py-1 rounded-full text-xs font-medium transition ${timeRange === 'long_term' ? 'bg-pink-500 text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
+              onClick={() => setTimeRange('long_term')}
+            >
+              1 Year
+            </button>
+          </div>
+          {loading && <p className="text-zinc-400">Loading stats...</p>}
+          {error && <p className="text-red-400">{error}</p>}
+          {stats && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-semibold mb-2">Top Artists</h3>
+                <div className="flex flex-wrap gap-3">
+                  {stats.top_artists?.slice(0, 5).map((artist: any) => (
+                    <div key={artist.id} className="flex items-center gap-2 bg-zinc-800 rounded-lg px-3 py-2">
+                      {artist.images?.[0]?.url && (
+                        <img src={artist.images[0].url} alt={artist.name} className="w-8 h-8 rounded-full object-cover" />
+                      )}
+                      <span className="text-sm text-zinc-100 font-medium">{artist.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-2">Top Tracks</h3>
+                <div className="flex flex-wrap gap-3">
+                  {stats.top_tracks?.slice(0, 5).map((track: any) => (
+                    <div key={track.id} className="flex items-center gap-2 bg-zinc-800 rounded-lg px-3 py-2">
+                      {track.album?.images?.[0]?.url && (
+                        <img src={track.album.images[0].url} alt={track.name} className="w-8 h-8 rounded object-cover" />
+                      )}
+                      <span className="text-sm text-zinc-100 font-medium">{track.name}</span>
+                      <span className="text-xs text-zinc-400 ml-2">{track.artists?.map((a: any) => a.name).join(', ')}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
