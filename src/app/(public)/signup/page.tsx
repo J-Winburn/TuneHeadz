@@ -5,9 +5,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
+    username: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -29,10 +31,16 @@ export default function SignUpPage() {
     setError(null);
 
     // Validation
-    if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
+    if (!formData.username || !formData.email || !formData.password || !formData.firstName || !formData.lastName) {
       setError("Please fill in all required fields");
       return;
     }
+    const normalizedUsername = formData.username.trim().toLowerCase();
+    if (!/^[a-z0-9_]{3,20}$/.test(normalizedUsername)) {
+      setError("Username must be 3-20 characters and can only use letters, numbers, and underscores.");
+      return;
+    }
+
 
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
@@ -47,28 +55,51 @@ export default function SignUpPage() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          phone: formData.phone || null,
-        }),
+      if (!isSupabaseConfigured()) {
+        throw new Error(
+          "Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local.",
+        );
+      }
+
+      const { data, error: signUpError } = await getSupabase().auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            phone: formData.phone || null,
+            username: normalizedUsername,
+          },
+        },
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Sign up failed");
+      if (signUpError) {
+        throw new Error(signUpError.message || "Sign up failed");
+      }
+
+      if (!data.user) {
+        throw new Error("Sign up failed. Please try again.");
+      }
+
+      try {
+        await getSupabase().from("user_profiles").upsert(
+          {
+            user_id: data.user.id,
+            username: normalizedUsername,
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            email: formData.email,
+            phone: formData.phone || null,
+            display_name: `${formData.firstName} ${formData.lastName}`.trim(),
+          },
+          { onConflict: "user_id" },
+        );
+      } catch {
+        // Best effort; profile row can still be created later from edit profile.
       }
 
       setSuccess(true);
-      // Redirect after 2 seconds
-      setTimeout(() => {
-        window.location.href = "/search";
-      }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create account");
     } finally {
@@ -78,28 +109,29 @@ export default function SignUpPage() {
 
   if (success) {
     return (
-      <main className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
+      <main className="min-h-screen bg-[radial-gradient(circle_at_20%_0%,rgba(251,61,147,0.14),transparent_32%),#07090f] flex items-center justify-center px-4">
         <div className="max-w-md w-full text-center">
           <div className="text-6xl mb-4">🎉</div>
           <h1 className="text-3xl font-bold text-white mb-2">Welcome to TuneHeadz!</h1>
           <p className="text-zinc-400 mb-4">Your account has been created successfully.</p>
-          <p className="text-sm text-zinc-500">Redirecting to search...</p>
+          <p className="text-sm text-zinc-500">Check your email to confirm your account, then sign in.</p>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-zinc-950 py-12 px-4">
-      <div className="max-w-md w-full mx-auto">
-        <div className="rounded-3xl border border-zinc-800 bg-zinc-900/50 p-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
-          <p className="text-zinc-400 mb-6">Join TuneHeadz and start your music journey</p>
+    <main className="min-h-screen bg-[radial-gradient(circle_at_20%_0%,rgba(251,61,147,0.14),transparent_32%),#07090f] py-12">
+      <div className="th-shell">
+        <div className="th-surface mx-auto w-full max-w-md p-8">
+          <p className="text-xs uppercase tracking-[0.25em] text-[#8ea5b4]">Join the community</p>
+          <h1 className="mb-2 mt-2 text-5xl leading-none">Create Account</h1>
+          <p className="mb-6 text-sm text-[#9ab0be]">Start logging your favorite tracks</p>
 
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             {/* First Name */}
             <div className="space-y-2">
-              <Label htmlFor="firstName" className="text-zinc-200">
+              <Label htmlFor="firstName" className="th-form-label">
                 First Name *
               </Label>
               <Input
@@ -109,12 +141,13 @@ export default function SignUpPage() {
                 placeholder="John"
                 value={formData.firstName}
                 onChange={handleChange}
+                className="th-input"
               />
             </div>
 
             {/* Last Name */}
             <div className="space-y-2">
-              <Label htmlFor="lastName" className="text-zinc-200">
+              <Label htmlFor="lastName" className="th-form-label">
                 Last Name *
               </Label>
               <Input
@@ -124,12 +157,28 @@ export default function SignUpPage() {
                 placeholder="Doe"
                 value={formData.lastName}
                 onChange={handleChange}
+                className="th-input"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="username" className="th-form-label">
+                Username *
+              </Label>
+              <Input
+                id="username"
+                name="username"
+                type="text"
+                placeholder="yourusername"
+                value={formData.username}
+                onChange={handleChange}
+                className="th-input"
               />
             </div>
 
             {/* Email */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-zinc-200">
+              <Label htmlFor="email" className="th-form-label">
                 Email *
               </Label>
               <Input
@@ -139,12 +188,13 @@ export default function SignUpPage() {
                 placeholder="you@example.com"
                 value={formData.email}
                 onChange={handleChange}
+                className="th-input"
               />
             </div>
 
             {/* Phone */}
             <div className="space-y-2">
-              <Label htmlFor="phone" className="text-zinc-200">
+              <Label htmlFor="phone" className="th-form-label">
                 Phone
               </Label>
               <Input
@@ -154,12 +204,13 @@ export default function SignUpPage() {
                 placeholder="+1 (555) 123-4567"
                 value={formData.phone}
                 onChange={handleChange}
+                className="th-input"
               />
             </div>
 
             {/* Password */}
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-zinc-200">
+              <Label htmlFor="password" className="th-form-label">
                 Password *
               </Label>
               <Input
@@ -169,12 +220,13 @@ export default function SignUpPage() {
                 placeholder="••••••••"
                 value={formData.password}
                 onChange={handleChange}
+                className="th-input"
               />
             </div>
 
             {/* Confirm Password */}
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-zinc-200">
+              <Label htmlFor="confirmPassword" className="th-form-label">
                 Confirm Password *
               </Label>
               <Input
@@ -184,18 +236,19 @@ export default function SignUpPage() {
                 placeholder="••••••••"
                 value={formData.confirmPassword}
                 onChange={handleChange}
+                className="th-input"
               />
             </div>
 
             {error && (
-              <div className="rounded-lg bg-red-500/10 border border-red-500/30 p-3">
+              <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3">
                 <p className="text-sm text-red-400">{error}</p>
               </div>
             )}
 
             <Button
               type="submit"
-              className="w-full"
+              className="th-btn w-full"
               disabled={loading}
             >
               {loading ? "Creating Account..." : "Create Account"}
@@ -203,7 +256,7 @@ export default function SignUpPage() {
 
             <p className="text-center text-sm text-zinc-400">
               Already have an account?{" "}
-              <Link href="/signin" className="text-[#fb3d93] hover:underline font-medium">
+              <Link href="/signin" className="font-medium text-[#fb3d93] hover:underline">
                 Sign in
               </Link>
             </p>

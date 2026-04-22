@@ -66,47 +66,47 @@ export default function HistoryPage() {
   };
 
   return (
-    <main className="min-h-screen px-4 py-10 text-zinc-50">
-      <div className="mx-auto max-w-4xl">
+    <main className="min-h-screen py-8">
+      <div className="th-shell max-w-4xl">
         <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-4xl font-bold">Generation History</h1>
-          <Link href="/search" className="text-[#fb3d93] hover:text-green-200">
-            ← Back to Search
+          <h1 className="text-5xl leading-none">Generation History</h1>
+          <Link href="/generate" className="text-sm uppercase tracking-[0.1em] text-[#fb3d93] hover:text-[#ffc4e0]">
+            ← Back to Generate
           </Link>
         </div>
 
         {error && (
-          <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          <div className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
             {error}
           </div>
         )}
 
         {loading ? (
-          <p className="text-zinc-400">Loading history...</p>
+          <p className="text-[#9ab0be]">Loading history...</p>
         ) : history.length === 0 ? (
-          <div className="rounded-3xl border border-white/10 bg-zinc-950/80 p-8 text-center">
-            <p className="text-zinc-400">No generated tracks yet. Start creating!</p>
+          <div className="th-card p-8 text-center">
+            <p className="text-[#9ab0be]">No generated tracks yet. Start creating!</p>
           </div>
         ) : (
           <div className="space-y-4">
             {history.map((track) => (
               <div
                 key={track.id}
-                className="rounded-2xl border border-white/10 bg-zinc-900/80 p-5"
+                className="rounded-2xl border border-[#2c3440] bg-[#1c2128] p-5"
               >
                 <div className="mb-3 flex items-start justify-between">
                   <div className="flex-1">
-                    <p className="text-sm text-zinc-400">{formatDate(track.createdAt)}</p>
-                    <p className="mt-1 text-base font-semibold">{track.prompt}</p>
-                    <p className="mt-1 text-sm text-zinc-400">Duration: {track.duration}s</p>
+                    <p className="text-xs uppercase tracking-[0.09em] text-[#8ea5b4]">{formatDate(track.createdAt)}</p>
+                    <p className="mt-1 text-lg">{track.prompt}</p>
+                    <p className="mt-1 text-sm text-[#9ab0be]">Duration: {track.duration}s</p>
                   </div>
                   <span
                     className={`rounded-full px-3 py-1 text-xs font-medium ${
                       track.status === "succeeded"
-                        ? "bg-[#fb3d93]/20 text-[#fb3d93]"
+                        ? "bg-[#3a1327] text-[#ffd0e7]"
                         : track.status === "failed"
-                          ? "bg-red-500/20 text-red-300"
-                          : "bg-zinc-700 text-zinc-300"
+                          ? "bg-red-500/20 text-red-200"
+                          : "bg-[#2c3440] text-[#d3dce3]"
                     }`}
                   >
                     {track.status}
@@ -123,7 +123,7 @@ export default function HistoryPage() {
                     <a
                       href={`/api/audio?url=${encodeURIComponent(track.audioUrl)}`}
                       download="generated-music.wav"
-                      className="rounded-lg bg-[#fb3d93]/20 px-3 py-2 text-sm font-medium text-[#fb3d93] hover:bg-green-500/30 transition"
+                      className="th-btn-secondary rounded-lg px-3 py-2 text-sm font-medium"
                     >
                       Download
                     </a>
@@ -136,7 +136,7 @@ export default function HistoryPage() {
 
                 <button
                   onClick={() => handleDelete(track.id)}
-                  className="rounded-lg bg-red-500/20 px-3 py-2 text-sm font-medium text-red-300 hover:bg-red-500/30 transition"
+                  className="rounded-lg border border-red-400/40 bg-red-500/15 px-3 py-2 text-sm font-medium text-red-200 transition hover:bg-red-500/25"
                 >
                   Delete
                 </button>

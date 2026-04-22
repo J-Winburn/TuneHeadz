@@ -1,6 +1,18 @@
 import type { Metadata } from "next";
+import { getServerSession } from "next-auth/next";
+import { Poppins } from "next/font/google";
 import "./globals.css";
+import Header from "@/components/Header";
+import { AlbumAmbientProvider } from "@/components/AlbumAmbientProvider";
 import { Providers } from "@/components/Providers";
+import { authOptions } from "@/lib/auth";
+import SiteFooter from "@/components/SiteFooter";
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-poppins",
+});
 
 export const metadata: Metadata = {
   title: "TuneHeadz - Music Discovery & AI Generation",
@@ -10,16 +22,28 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  let session = null;
+  try {
+    session = await getServerSession(authOptions);
+  } catch {
+    // Misconfigured NEXTAUTH_SECRET / adapter issues should not white-screen the app
+    session = null;
+  }
+
   return (
-    <html lang="en">
-      <body>
-        <Providers>
-          {children}
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning className={poppins.variable}>
+        <Providers session={session}>
+          <AlbumAmbientProvider>
+            <Header initialSession={session} />
+            {children}
+            <SiteFooter />
+          </AlbumAmbientProvider>
         </Providers>
       </body>
     </html>

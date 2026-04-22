@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { getClientCredentialsToken } from "@/lib/spotify-client-credentials";
+import type { AlbumCard } from "@/types/album";
 
 type SpotifyAlbum = {
   id: string;
@@ -9,48 +11,54 @@ type SpotifyAlbum = {
   images: { url: string }[];
 };
 
-type Album = {
-  id: string;
-  name: string;
-  artist: string;
-  image: string;
-};
+async function getSpotifyNewReleasesWithToken(accessToken: string): Promise<AlbumCard[]> {
+  const response = await fetch(
+    `https://api.spotify.com/v1/browse/new-releases?limit=20`,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    },
+  );
 
-async function getRandomSpotifyAlbums(accessToken: string): Promise<Album[]> {
+  if (!response.ok) throw new Error("Spotify request failed");
+
+  const data = (await response.json()) as {
+    albums?: { items: SpotifyAlbum[] };
+  };
+  const albums = data.albums?.items ?? [];
+
+  return albums
+    .filter((album) => album.images.length > 0)
+    .map((album) => ({
+      id: album.id,
+      name: album.name,
+      artist: album.artists[0]?.name || "Unknown",
+      image: album.images[0]?.url || "",
+      source: "spotify" as const,
+    }));
+}
+
+async function getSpotifyViaClientCredentials(): Promise<AlbumCard[]> {
   try {
-    const response = await fetch(
-      `https://api.spotify.com/v1/browse/new-releases?limit=20`,
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-        cache: "no-store",
-      }
-    );
-
-    if (!response.ok) throw new Error("Spotify request failed");
-
-    const data = (await response.json()) as {
-      albums?: { items: SpotifyAlbum[] };
-    };
-    const albums = data.albums?.items ?? [];
-
-    return albums
-      .filter((album) => album.images.length > 0)
-      .slice(0, 20)
-      .map((album) => ({
-        id: album.id,
-        name: album.name,
-        artist: album.artists[0]?.name || "Unknown",
-        image: album.images[0]?.url || "",
-      }));
-  } catch (error) {
-    console.error("Spotify fetch failed:", error);
+    const token = await getClientCredentialsToken();
+    return getSpotifyNewReleasesWithToken(token);
+  } catch {
     return [];
   }
 }
 
-async function getRandomMusicBrainzAlbums(): Promise<Album[]> {
+async function getSpotifyViaSession(accessToken: string): Promise<AlbumCard[]> {
   try {
-    const releases: Album[] = [];
+    return await getSpotifyNewReleasesWithToken(accessToken);
+  } catch (error) {
+    console.error("Spotify session fetch failed:", error);
+    return [];
+  }
+}
+
+async function getRandomMusicBrainzAlbums(): Promise<AlbumCard[]> {
+  try {
+    const releases: AlbumCard[] = [];
     const artists = [
       "Kendrick Lamar",
       "Drake",
@@ -64,15 +72,14 @@ async function getRandomMusicBrainzAlbums(): Promise<Album[]> {
       "Dua Lipa",
     ];
 
-    // Fetch releases from multiple artists
     for (const artist of artists.slice(0, 3)) {
       try {
         const response = await fetch(
           `https://musicbrainz.org/ws/2/release?query=artist:"${artist}"&limit=5&fmt=json`,
           {
-            headers: { "User-Agent": "Tune-Headz/1.0" },
+            headers: { "User-Agent": "TuneHeadz/1.0" },
             cache: "no-store",
-          }
+          },
         );
 
         if (!response.ok) continue;
@@ -88,10 +95,9 @@ async function getRandomMusicBrainzAlbums(): Promise<Album[]> {
         const items = data.releases?.slice(0, 5) ?? [];
 
         for (const release of items) {
-          // Try to get cover art from Cover Art Archive
           const coverResponse = await fetch(
             `https://coverartarchive.org/release/${release.id}/front-500.jpg`,
-            { cache: "no-store" }
+            { cache: "no-store" },
           ).catch(() => null);
 
           const image =
@@ -105,10 +111,11 @@ async function getRandomMusicBrainzAlbums(): Promise<Album[]> {
               name: release.title,
               artist: release["artist-credit"]?.[0]?.name || "Unknown",
               image,
+              source: "musicbrainz",
             });
           }
         }
-      } catch (e) {
+      } catch {
         continue;
       }
     }
@@ -123,25 +130,26 @@ async function getRandomMusicBrainzAlbums(): Promise<Album[]> {
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    const accessToken = (session as any)?.accessToken;
+    const sessionToken = (session as { accessToken?: string } | null)?.accessToken;
 
-    let albums: Album[] = [];
+    let albums: AlbumCard[] = [];
 
-    if (accessToken) {
-      albums = await getRandomSpotifyAlbums(accessToken);
-    } else {
+    albums = await getSpotifyViaClientCredentials();
+    if (albums.length === 0 && sessionToken) {
+      albums = await getSpotifyViaSession(sessionToken);
+    }
+    if (albums.length === 0) {
       albums = await getRandomMusicBrainzAlbums();
     }
 
     if (albums.length === 0) {
       return NextResponse.json(
         { error: "Failed to fetch albums" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
-    // Shuffle albums
-    albums = albums.sort(() => Math.random() - 0.5);
+    albums = [...albums].sort(() => Math.random() - 0.5);
 
     return NextResponse.json({ albums });
   } catch (error) {

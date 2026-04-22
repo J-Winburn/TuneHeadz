@@ -15,10 +15,14 @@ const searchTypeMap = {
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get("q")?.trim();
   const type = (request.nextUrl.searchParams.get("type") || "all") as keyof typeof searchTypeMap;
+  const rawLimit = request.nextUrl.searchParams.get("limit");
+  const parsedLimit = rawLimit ? Number.parseInt(rawLimit, 10) : 8;
+  const limit =
+    Number.isFinite(parsedLimit) ? Math.min(15, Math.max(1, parsedLimit)) : 8;
 
   if (!query) {
     return NextResponse.json(
-      { error: "Please provide a song, artist, or album to search for.", tracks: [], artists: [], albums: [] },
+      { error: "Please provide a song or artist to search for.", tracks: [], artists: [], albums: [] },
       { status: 400 },
     );
   }
@@ -30,7 +34,7 @@ export async function GET(request: NextRequest) {
     const searchParams = new URLSearchParams({
       q: query,
       type: searchTypeMap[type] ?? searchTypeMap.all,
-      limit: "8",
+      limit: String(limit),
     });
 
     const response = await fetch(`${SPOTIFY_SEARCH_URL}?${searchParams.toString()}`, {

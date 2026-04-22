@@ -138,25 +138,25 @@ export default function GeneratePage() {
   };
 
   return (
-    <main className="min-h-screen px-4 py-10 text-zinc-50">
-      <div className="mx-auto max-w-2xl">
-        <div className="rounded-3xl border border-white/10 bg-zinc-950/80 p-6 shadow-2xl backdrop-blur md:p-8">
+    <main className="min-h-screen py-8">
+      <div className="th-shell max-w-2xl">
+        <div className="th-card p-6 md:p-8">
           <div className="flex items-center justify-between">
-            <span className="rounded-full bg-[#fb3d93]/15 px-3 py-1 text-sm font-medium text-[#fb3d93]">
+            <span className="th-chip th-chip--active">
               AI Music Generation
             </span>
             <Link
               href="/"
-              className="text-sm text-zinc-400 transition hover:text-zinc-200"
+              className="text-sm uppercase tracking-[0.1em] text-[#8ea5b4] transition hover:text-[#f1f5f8]"
             >
               ← Back to Homepage
             </Link>
           </div>
 
-          <h1 className="mt-4 text-4xl font-bold tracking-tight md:text-5xl">
+          <h1 className="mt-4 text-5xl leading-none md:text-6xl">
             Generate Music with AI
           </h1>
-          <p className="mt-3 text-sm text-zinc-300 md:text-base">
+          <p className="mt-3 text-sm text-[#9ab0be] md:text-base">
             Describe the music you want and let AI generate it. Works best
             with genre, mood, tempo, and instruments.
           </p>
@@ -168,21 +168,21 @@ export default function GeneratePage() {
               placeholder="e.g. chill lo-fi hip hop, 80 BPM, warm vinyl crackle, rainy evening mood"
               rows={3}
               disabled={loading}
-              className="w-full resize-none rounded-2xl border border-white/10 bg-zinc-900 px-4 py-3 text-base outline-none transition focus:border-[#fb3d93] disabled:opacity-50"
+              className="th-input resize-none disabled:opacity-50"
             />
 
             <div className="flex flex-wrap items-center gap-3">
-              <span className="text-sm text-zinc-400">Duration:</span>
+              <span className="text-sm text-[#9ab0be]">Duration:</span>
               {DURATIONS.map((d) => (
                 <button
                   key={d}
                   type="button"
                   disabled={loading}
                   onClick={() => setDuration(d)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition disabled:opacity-50 ${
+                  className={`th-chip transition disabled:opacity-50 ${
                     duration === d
-                      ? "bg-[#fb3d93] text-black"
-                      : "bg-zinc-900 text-zinc-200 hover:bg-zinc-800"
+                      ? "th-chip--active"
+                      : "hover:text-[#f1f5f8]"
                   }`}
                 >
                   {d}s
@@ -193,7 +193,7 @@ export default function GeneratePage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-2xl bg-[#fb3d93] py-3 font-semibold text-black transition hover:bg-[#e63a85] disabled:cursor-not-allowed disabled:bg-green-300"
+              className="th-btn w-full py-3"
             >
               {loading ? "Generating…" : "Generate"}
             </button>
@@ -202,10 +202,10 @@ export default function GeneratePage() {
           {loading && status ? (
             <div className="mt-5 space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-zinc-400">{statusLabel[status]}</span>
-                <span className="tabular-nums text-zinc-500">{Math.round(progress)}%</span>
+                <span className="text-[#9ab0be]">{statusLabel[status]}</span>
+                <span className="tabular-nums text-[#8ea5b4]">{Math.round(progress)}%</span>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-[#252c36]">
                 <div
                   className="h-full rounded-full bg-[#fb3d93] transition-all duration-300"
                   style={{ width: `${progress}%` }}
@@ -215,20 +215,20 @@ export default function GeneratePage() {
           ) : null}
 
           {error ? (
-            <p className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            <p className="mt-4 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
               {error}
             </p>
           ) : null}
         </div>
 
         {audioUrl ? (
-          <div className="mt-6 rounded-3xl border border-white/10 bg-zinc-950/70 p-6">
-            <h2 className="mb-4 text-xl font-semibold">Your Track</h2>
+          <div className="th-card mt-6 p-6">
+            <h2 className="mb-4 text-3xl">Your Track</h2>
             <audio controls src={`/api/audio?url=${encodeURIComponent(audioUrl)}`} className="w-full" />
             <a
               href={`/api/audio?url=${encodeURIComponent(audioUrl)}`}
               download="generated-music.wav"
-              className="mt-4 inline-block text-sm text-[#fb3d93] hover:text-green-200"
+              className="mt-4 inline-block text-sm uppercase tracking-[0.08em] text-[#fb3d93] hover:text-[#ffc4e0]"
             >
               Download
             </a>

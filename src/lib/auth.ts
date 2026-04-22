@@ -1,8 +1,8 @@
 import type { NextAuthOptions } from "next-auth";
 import SpotifyProvider from "next-auth/providers/spotify";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
+import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
+import { getSupabaseAdminOrNull } from "@/lib/supabase-admin";
 
 const SPOTIFY_SCOPES = [
   "user-read-private",
@@ -64,38 +64,81 @@ export const authOptions: NextAuthOptions = {
   },
   providers: [
     CredentialsProvider({
-      name: "Email",
+      name: "Email & Password",
       credentials: {
-        email: { label: "Email", type: "email" },
+        identifier: { label: "Email or username", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Missing email or password");
+        const identifier = credentials?.identifier?.trim();
+        const password = credentials?.password;
+
+        if (!identifier || !password) {
+          return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+        if (!isSupabaseConfigured()) {
+          throw new Error(
+            "Supabase is not configured on the server. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local and restart the dev server.",
+          );
+        }
+
+        let email = identifier;
+        if (!identifier.includes("@")) {
+          const admin = getSupabaseAdminOrNull();
+          if (admin) {
+            const { data: row } = await admin
+              .from("user_profiles")
+              .select("email")
+              .eq("username", identifier.toLowerCase())
+              .maybeSingle();
+            if (row?.email) {
+              email = row.email;
+            } else {
+              throw new Error("Invalid email/username or password.");
+            }
+          } else {
+            throw new Error("Username login requires profile database configuration.");
+          }
+        }
+
+        const { data, error } = await getSupabase().auth.signInWithPassword({
+          email,
+          password,
         });
 
-        if (!user || !user.password) {
-          throw new Error("Invalid email or password");
+        if (error) {
+          const code = (error as { code?: string }).code;
+          const msg = (error.message || "").toLowerCase();
+
+          if (code === "email_not_confirmed" || msg.includes("email not confirmed")) {
+            throw new Error(
+              "Confirm your email before signing in (check your inbox). For local testing you can disable “Confirm email” under Supabase → Authentication → Providers → Email.",
+            );
+          }
+
+          if (
+            code === "invalid_credentials" ||
+            msg.includes("invalid login") ||
+            msg.includes("invalid credentials")
+          ) {
+            throw new Error("Invalid email/username or password.");
+          }
+
+          throw new Error(error.message || "Could not sign in.");
         }
 
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-
-        if (!isPasswordValid) {
-          throw new Error("Invalid email or password");
+        if (!data.user) {
+          throw new Error("Could not sign in.");
         }
 
         return {
-          id: user.id,
-          email: user.email,
-          name: user.displayName,
-          image: user.profileImage,
+          id: data.user.id,
+          email: data.user.email,
+          name:
+            (data.user.user_metadata?.firstName as string | undefined) ||
+            (data.user.user_metadata?.full_name as string | undefined) ||
+            data.user.email,
         };
       },
     }),
@@ -134,7 +177,11 @@ export const authOptions: NextAuthOptions = {
       };
       }
 
-      // For native auth (no account refresh needed)
+      // Email/password sessions have no Spotify refresh token — never hit Spotify's API
+      if (!token.refreshToken) {
+        return token;
+      }
+
       if (!token.accessToken) {
         return token;
       }

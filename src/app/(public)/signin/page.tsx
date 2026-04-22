@@ -11,11 +11,12 @@ import { Label } from "@/components/ui/label";
 export default function SignInPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    email: "",
+    identifier: "",
     password: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const canSubmit = formData.identifier.trim().length > 0 && formData.password.length > 0;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -27,7 +28,7 @@ export default function SignInPage() {
     setError(null);
 
     // Validation
-    if (!formData.email || !formData.password) {
+    if (!formData.identifier || !formData.password) {
       setError("Please fill in all fields");
       return;
     }
@@ -36,17 +37,24 @@ export default function SignInPage() {
 
     try {
       const result = await signIn("credentials", {
-        email: formData.email,
+        identifier: formData.identifier.trim(),
         password: formData.password,
         redirect: false,
       });
 
       if (result?.error) {
-        setError(result.error);
+        // NextAuth uses "CredentialsSignin" when authorize() returns null; we throw specific messages for other cases
+        setError(
+          result.error === "CredentialsSignin"
+            ? "Invalid email/username or password."
+            : result.error,
+        );
       } else if (result?.ok) {
-        router.push("/search");
+        router.push("/");
+      } else {
+        setError("Sign in failed. Please try again.");
       }
-    } catch (err) {
+    } catch {
       setError("Failed to sign in");
     } finally {
       setLoading(false);
@@ -54,40 +62,33 @@ export default function SignInPage() {
   };
 
   return (
-    <main className="min-h-screen bg-black py-12 px-4">
-      <div className="max-w-md w-full mx-auto">
-        <div className="rounded-3xl border border-zinc-800 bg-zinc-900/50 p-8">
-          {/* Icon */}
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-zinc-800 mb-4">
-              <span className="text-2xl">→</span>
-            </div>
-          </div>
-
-          <h1 className="text-3xl font-bold text-white mb-2 text-center">Sign in with email</h1>
-          <p className="text-zinc-400 mb-8 text-center">
-            Access your TuneHeadz account and discover music
-          </p>
+    <main className="min-h-screen bg-[radial-gradient(circle_at_20%_0%,rgba(251,61,147,0.14),transparent_32%),#07090f] py-12">
+      <div className="th-shell">
+        <div className="th-surface mx-auto w-full max-w-md p-8">
+          <p className="text-center text-xs uppercase tracking-[0.25em] text-[#8ea5b4]">Welcome back</p>
+          <h1 className="mb-2 mt-3 text-center text-5xl leading-none">Sign In</h1>
+          <p className="mb-8 text-center text-sm text-[#9ab0be]">Continue your music diary</p>
 
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            {/* Email */}
+            {/* Email or Username */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-zinc-200">
-                Email
+              <Label htmlFor="identifier" className="th-form-label">
+                Email or Username
               </Label>
               <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="you@example.com"
-                value={formData.email}
+                id="identifier"
+                name="identifier"
+                type="text"
+                placeholder="you@example.com or yourusername"
+                value={formData.identifier}
                 onChange={handleChange}
+                className="th-input"
               />
             </div>
 
             {/* Password */}
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-zinc-200">
+              <Label htmlFor="password" className="th-form-label">
                 Password
               </Label>
               <Input
@@ -97,6 +98,7 @@ export default function SignInPage() {
                 placeholder="••••••••"
                 value={formData.password}
                 onChange={handleChange}
+                className="th-input"
               />
             </div>
 
@@ -108,17 +110,21 @@ export default function SignInPage() {
             </div>
 
             {error && (
-              <div className="rounded-lg bg-red-500/10 border border-red-500/30 p-3">
+              <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3">
                 <p className="text-sm text-red-400">{error}</p>
               </div>
             )}
 
             <Button
               type="submit"
-              className="w-full"
-              disabled={loading}
+              className={`w-full ${
+                canSubmit
+                  ? "th-btn"
+                  : "th-btn-secondary text-[#d3d9e3]"
+              }`}
+              disabled={loading || !canSubmit}
             >
-              {loading ? "Signing in..." : "Get Started"}
+              {loading ? "Signing in..." : "Sign In"}
             </Button>
 
             {/* Divider */}
@@ -127,7 +133,7 @@ export default function SignInPage() {
                 <div className="w-full border-t border-zinc-800"></div>
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-zinc-900 px-2 text-zinc-500">Or sign in with</span>
+                <span className="bg-[#0f1118] px-2 text-zinc-500">Or sign in with</span>
               </div>
             </div>
 
@@ -135,17 +141,17 @@ export default function SignInPage() {
             <div className="grid grid-cols-1 gap-3">
               <button
                 type="button"
-                onClick={() => setError("Sign in with email first, then link Spotify from your profile.")}
-                className="py-3 rounded-lg border border-zinc-800 hover:bg-zinc-800/50 transition flex items-center justify-center gap-2 font-medium"
+                onClick={() => signIn("spotify", { callbackUrl: "/" })}
+                className="th-btn-secondary flex w-full items-center justify-center gap-2 rounded-lg py-3 font-medium"
               >
                 <span className="text-xl">🎵</span>
-                Link Spotify from Profile
+                Link to Spotify
               </button>
             </div>
 
             <p className="text-center text-sm text-zinc-400">
               Don't have an account?{" "}
-              <Link href="/signup" className="text-[#fb3d93] hover:underline font-medium">
+              <Link href="/signup" className="font-medium text-[#fb3d93] hover:underline">
                 Create one
               </Link>
             </p>

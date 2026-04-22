@@ -13,15 +13,19 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@supabase/supabase-js": "^2.102.1",
+    "dotenv": "^17.4.1",
+    "lucide-react": "^1.7.0",
     "next": "^16.2.1",
     "next-auth": "^4.24.13",
+    "node-vibrant": "^4.0.4",
+    "pg": "^8.20.0",
     "postcss": "^8.5.8",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
-    "@prisma/client": "^5.22.0",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-slot": "^1.2.4",
@@ -32,10 +36,8 @@
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "dotenv": "^17.4.1",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.1",
-    "prisma": "^5.22.0",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3"

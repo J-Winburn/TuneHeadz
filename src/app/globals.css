@@ -1,25 +1,412 @@
 @import "tailwindcss";
 
-:root {
-  --background-dark: #000000;
-  --background-light: #ffffff;
-  --foreground-dark: #f4f4f5;
-  --foreground-light: #000000;
+/* shadcn-style semantic colors for Button and other UI primitives */
+@theme {
+  --color-background: #0a0a0d;
+  --color-foreground: #f1f5f8;
+  --color-primary: #fb3d93;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #1c2128;
+  --color-secondary-foreground: #f1f5f8;
+  --color-destructive: #dc2626;
+  --color-destructive-foreground: #fafafa;
+  --color-accent: #27272a;
+  --color-accent-foreground: #f1f5f8;
+  --color-input: #3f3f46;
+  --color-ring: #fb3d93;
 }
 
-html,
-body {
+:root {
+  --bg-0: #050507;
+  --bg-1: #0a0a0d;
+  --bg-2: #121218;
+  --line: #2a2a34;
+  --text-main: #f1f5f8;
+  --text-dim: #9ab0be;
+  --accent: #fb3d93;
+  --accent-soft: #3a1327;
+  --danger: #ff5d5d;
+}
+
+html {
   margin: 0;
   padding: 0;
 }
 
 body {
-  background-color: var(--background-dark);
-  color: var(--foreground-dark);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(1000px 500px at 10% -10%, rgba(251, 61, 147, 0.08), transparent 60%),
+    radial-gradient(800px 350px at 110% 10%, rgba(251, 61, 147, 0.05), transparent 55%),
+    var(--bg-1);
+  color: var(--text-main);
+  font-family: var(--font-poppins), sans-serif;
+  font-weight: 400;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-body.light {
-  background-color: var(--background-light);
-  color: var(--foreground-light);
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-poppins), sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+}
+
+p {
+  line-height: 1.6;
+}
+
+a {
+  color: inherit;
+}
+
+.th-shell {
+  width: min(1120px, calc(100% - 2rem));
+  margin-inline: auto;
+}
+
+/*
+ * Primary nav strip — shares the body canvas (no bottom border; blends into page below).
+ */
+.th-app-header {
+  background:
+    radial-gradient(920px 420px at 10% -28%, rgba(251, 61, 147, 0.085), transparent 58%),
+    radial-gradient(760px 340px at 94% -20%, rgba(251, 61, 147, 0.055), transparent 54%),
+    rgba(10, 10, 13, 0.72);
+  -webkit-backdrop-filter: blur(14px) saturate(1.12);
+  backdrop-filter: blur(14px) saturate(1.12);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .th-app-header {
+    background:
+      radial-gradient(920px 420px at 10% -28%, rgba(251, 61, 147, 0.085), transparent 58%),
+      rgba(10, 10, 13, 0.94);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .th-app-header {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background:
+      radial-gradient(920px 420px at 10% -28%, rgba(251, 61, 147, 0.065), transparent 58%),
+      rgba(10, 10, 13, 0.96);
+  }
+}
+
+/* Album detail full-viewport tint: nav/footer sit on the same gradient canvas (no seams). */
+body[data-album-ambient="true"] .th-app-header.th-app-header--album-ambient {
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+body[data-album-ambient="true"] .th-site-footer {
+  background: transparent !important;
+  border-top-color: transparent !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-album-ambient="true"] .th-app-header.th-app-header--album-ambient {
+    transition: none !important;
+  }
+}
+
+.th-subtle-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #2b3040 transparent;
+}
+
+.th-subtle-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.th-subtle-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.th-subtle-scroll::-webkit-scrollbar-thumb {
+  background: #2b3040;
+  border-radius: 999px;
+}
+
+.th-subtle-scroll::-webkit-scrollbar-thumb:hover {
+  background: #394158;
+}
+
+.th-chip {
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  color: var(--text-dim);
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.th-chip--active {
+  background: var(--accent-soft);
+  border-color: #7a3355;
+  color: #ffd8ea;
+}
+
+.th-card {
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.18));
+  border-radius: 1rem;
+}
+
+.th-surface {
+  border: 1px solid #2b2030;
+  background: rgba(15, 17, 24, 0.95);
+  border-radius: 0.9rem;
+}
+
+.th-form-label {
+  display: block;
+  margin-bottom: 0.38rem;
+  color: #cfd7e4;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.th-input {
+  width: 100%;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  color: var(--text-main);
+  border-radius: 0.8rem;
+  padding: 0.8rem 0.95rem;
+}
+
+.th-input::placeholder {
+  color: #74818f;
+}
+
+.th-input:focus {
+  outline: 2px solid rgba(251, 61, 147, 0.45);
+  outline-offset: 1px;
+}
+
+.th-btn {
+  border-radius: 0.8rem;
+  border: 1px solid transparent;
+  background: var(--accent);
+  color: #2d0a1c;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.th-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.02);
+}
+
+.th-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.th-btn-secondary {
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  color: var(--text-main);
+}
+
+/* Landing: dual-row infinite album marquee */
+@keyframes th-marquee-left {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes th-marquee-right {
+  from {
+    transform: translate3d(-50%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.th-marquee__viewport {
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 10%,
+    black 90%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 10%,
+    black 90%,
+    transparent 100%
+  );
+}
+
+.th-marquee__track {
+  display: flex;
+  width: max-content;
+  gap: 14px;
+  will-change: transform;
+}
+
+.th-marquee__track--left {
+  animation: th-marquee-left linear infinite;
+}
+
+.th-marquee__track--right {
+  animation: th-marquee-right linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .th-marquee__track--left,
+  .th-marquee__track--right {
+    animation: none;
+  }
+}
+
+/* Genre browse dropdown — purposeful entrance + stagger (animate skill) */
+@keyframes th-genre-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes th-genre-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.th-genre-dropdown-panel {
+  animation: th-genre-panel-in 260ms cubic-bezier(0.25, 1, 0.5, 1) both;
+  transform-origin: top center;
+}
+
+.th-genre-dropdown-card {
+  animation: th-genre-card-in 200ms cubic-bezier(0.25, 1, 0.5, 1) both;
+}
+
+.th-genre-dropdown-grid > .th-genre-dropdown-card:nth-child(1) {
+  animation-delay: 0ms;
+}
+.th-genre-dropdown-grid > .th-genre-dropdown-card:nth-child(2) {
+  animation-delay: 35ms;
+}
+.th-genre-dropdown-grid > .th-genre-dropdown-card:nth-child(3) {
+  animation-delay: 70ms;
+}
+.th-genre-dropdown-grid > .th-genre-dropdown-card:nth-child(4) {
+  animation-delay: 105ms;
+}
+.th-genre-dropdown-grid > .th-genre-dropdown-card:nth-child(5) {
+  animation-delay: 140ms;
+}
+.th-genre-dropdown-grid > .th-genre-dropdown-card:nth-child(6) {
+  animation-delay: 175ms;
+}
+.th-genre-dropdown-grid > .th-genre-dropdown-card:nth-child(7) {
+  animation-delay: 210ms;
+}
+.th-genre-dropdown-grid > .th-genre-dropdown-card:nth-child(8) {
+  animation-delay: 245ms;
+}
+.th-genre-dropdown-grid > .th-genre-dropdown-card:nth-child(9) {
+  animation-delay: 280ms;
+}
+.th-genre-dropdown-grid > .th-genre-dropdown-card:nth-child(10) {
+  animation-delay: 315ms;
+}
+.th-genre-dropdown-grid > .th-genre-dropdown-card:nth-child(11) {
+  animation-delay: 350ms;
+}
+.th-genre-dropdown-grid > .th-genre-dropdown-card:nth-child(12) {
+  animation-delay: 385ms;
+}
+.th-genre-dropdown-grid > .th-genre-dropdown-card:nth-child(n + 13) {
+  animation-delay: 400ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .th-genre-dropdown-panel,
+  .th-genre-dropdown-card {
+    animation: none !important;
+    animation-delay: 0ms !important;
+  }
+}
+
+/* Hero nav inline search — dropdown entrance (tailwindcss-animate not in project) */
+@keyframes th-hero-inline-search-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.th-hero-inline-search-panel {
+  animation: th-hero-inline-search-panel-in 220ms cubic-bezier(0.25, 1, 0.5, 1) both;
+  transform-origin: top center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .th-hero-inline-search-panel {
+    animation: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .th-genre-dropdown-card {
+    transition:
+      transform 200ms cubic-bezier(0.25, 1, 0.5, 1),
+      box-shadow 200ms cubic-bezier(0.25, 1, 0.5, 1);
+  }
+
+  .th-genre-dropdown-card:hover {
+    transform: scale(1.02);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .th-genre-dropdown-card {
+    transition:
+      box-shadow 150ms ease,
+      outline-color 150ms ease;
+  }
 }

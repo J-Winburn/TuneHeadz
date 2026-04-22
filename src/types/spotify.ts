@@ -7,9 +7,10 @@ export type SpotifyUser = {
 export type Track = {
   id: string;
   name: string;
-  artists: { name: string }[];
-  album?: { name: string; images?: { url: string }[] };
+  artists: { id?: string; name: string }[];
+  album?: { id?: string; name: string; images?: { url: string }[] };
   external_urls?: { spotify?: string };
+  explicit?: boolean;
 };
 
 export type Artist = {
@@ -24,9 +25,8 @@ export type Artist = {
 export type Album = {
   id: string;
   name: string;
-  artists: { name: string }[];
+  artists: { id?: string; name: string }[];
   images?: { url: string }[];
-  release_date?: string;
   external_urls?: { spotify?: string };
 };
 
