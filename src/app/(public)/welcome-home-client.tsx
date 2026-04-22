@@ -28,7 +28,9 @@ export function WelcomeHomeClient({
     setMounted(true);
   }, []);
 
-  const isAuthed = mounted ? !!session?.user : false;
+  // Always render unauthenticated on server/first-client pass so HTML matches.
+  // After mount, flip to the real session state.
+  const isAuthed = mounted && !!session?.user;
 
   const user = mounted ? session?.user : undefined;
   const firstName =
@@ -94,38 +96,49 @@ export function WelcomeHomeClient({
                 </>
               ) : (
                 <>
-                  <h1 className="mx-auto max-w-4xl">
-                    <span className="block text-2xl font-semibold leading-tight tracking-tight text-white md:text-4xl">
+                  {/* Logo centred above tagline */}
+                  <div className="mx-auto mb-3 -mt-[7.5rem] flex w-full justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/assets/tune-logo-tagline.png"
+                      alt="TuneHeadz"
+                      className="h-auto w-[45%] object-contain"
+                    />
+                  </div>
+                  <div className="-mt-28">
+                    <p className="mb-5 text-2xl font-semibold leading-tight tracking-tight text-white md:text-4xl">
                       Rate albums and songs you actually care about.
-                    </span>
-                    <span className="mt-6 block text-5xl leading-[0.95] md:text-7xl">
-                      Track songs you love.
-                      <br />
-                      Save what you want to hear.
-                      <br />
-                      Share what&apos;s actually good.
-                    </span>
-                  </h1>
-                  <p className="mx-auto mt-4 max-w-xl text-sm text-[#a8b6c7] md:text-base">
-                    Keep the social music experience you already have, but in a
-                    more cinematic layout.
-                  </p>
-                  <div className="mt-7 flex justify-center">
-                    <Button
-                      asChild
-                      size="lg"
-                      className="group min-w-[240px] rounded-xl border-0 bg-white text-sm font-semibold uppercase tracking-[0.09em] !text-neutral-950 shadow-lg shadow-black/20 hover:bg-zinc-100 hover:!text-neutral-950"
-                    >
-                      <Link href="/search">
-                        Get Started — It&apos;s Free
-                        <ArrowRight
-                          className="-me-1 ms-2 opacity-60 transition-transform group-hover:translate-x-0.5"
-                          size={16}
-                          strokeWidth={2}
-                          aria-hidden="true"
-                        />
-                      </Link>
-                    </Button>
+                    </p>
+                    <h1 className="mx-auto max-w-4xl">
+                      <span className="mt-2 block text-[2.4rem] leading-[1.05] md:text-[3.6rem]">
+                        <span className="block">Track songs you love.</span>
+                        <span className="block">Save what you want to hear.</span>
+                        <span className="block">Share what&apos;s actually good.</span>
+                      </span>
+                    </h1>
+                    <p className="mx-auto mt-4 max-w-xl text-sm text-[#a8b6c7] md:text-base">
+                      Keep the social music experience you already have, but in a
+                      more cinematic layout.
+                    </p>
+                    <div className="mt-7 flex justify-center">
+                      <Button
+                        asChild
+                        size="lg"
+                        className="th-btn-sweep group min-w-[240px] rounded-xl border-0 bg-white text-sm font-semibold uppercase tracking-[0.09em] !text-neutral-950 shadow-lg shadow-black/20 transition-[box-shadow,transform,color] duration-[380ms] ease-[cubic-bezier(0.25,1,0.5,1)] hover:!text-white hover:shadow-[0_0_28px_rgba(251,61,147,0.5)] motion-safe:active:scale-[0.97] motion-reduce:transition-none"
+                      >
+                        <Link href="/search">
+                          <span className="th-btn-sweep-content gap-2">
+                            Get Started — It&apos;s Free
+                            <ArrowRight
+                              className="opacity-60 transition-transform duration-[380ms] ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:translate-x-1 group-hover:opacity-100 motion-reduce:transition-none"
+                              size={16}
+                              strokeWidth={2}
+                              aria-hidden="true"
+                            />
+                          </span>
+                        </Link>
+                      </Button>
+                    </div>
                   </div>
                 </>
               )}
