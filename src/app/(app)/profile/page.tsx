@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { Pencil } from "lucide-react";
+import { Pencil, Search, X, Pin } from "lucide-react";
+import { GENRE_CARDS } from "@/lib/genres";
 
 type ProfileUser = {
   firstName?: string;
@@ -32,6 +33,31 @@ type FavoriteItem = {
   artists: string[];
   albumName?: string;
   imageUrl?: string;
+};
+
+type PinnedItem = {
+  id: string;
+  name: string;
+  subtitle: string;
+  imageUrl: string;
+  type: "track" | "album";
+  spotifyUrl: string;
+};
+
+type SpotifySearchTrack = {
+  id: string;
+  name: string;
+  artists: { name: string }[];
+  album: { name: string; images: { url: string }[] };
+  external_urls: { spotify: string };
+};
+
+type SpotifySearchAlbum = {
+  id: string;
+  name: string;
+  artists: { name: string }[];
+  images: { url: string }[];
+  external_urls: { spotify: string };
 };
 
 type ListItem = {
@@ -93,6 +119,28 @@ export default function ProfilePage() {
   const [spotifyStats, setSpotifyStats] = useState<SpotifyStats | null>(null);
   const [spotifyLoading, setSpotifyLoading] = useState(false);
   const [spotifyError, setSpotifyError] = useState<string | null>(null);
+
+  const [pinnedItems, setPinnedItems] = useState<PinnedItem[]>([]);
+  const [showPinSearch, setShowPinSearch] = useState(false);
+  const [pinTab, setPinTab] = useState<"songs" | "albums">("songs");
+
+  const [favoriteGenres, setFavoriteGenres] = useState<string[]>([]);
+  const [showGenrePicker, setShowGenrePicker] = useState(false);
+  const [customGenreInput, setCustomGenreInput] = useState("");
+
+  const [songQuery, setSongQuery] = useState("");
+  const [songResults, setSongResults] = useState<SpotifySearchTrack[]>([]);
+  const [songSearching, setSongSearching] = useState(false);
+  const [songSearchError, setSongSearchError] = useState<string | null>(null);
+  const songAbortRef = useRef<AbortController | null>(null);
+  const songDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [albumQuery, setAlbumQuery] = useState("");
+  const [albumResults, setAlbumResults] = useState<SpotifySearchAlbum[]>([]);
+  const [albumSearching, setAlbumSearching] = useState(false);
+  const [albumSearchError, setAlbumSearchError] = useState<string | null>(null);
+  const albumAbortRef = useRef<AbortController | null>(null);
+  const albumDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -223,6 +271,97 @@ export default function ProfilePage() {
     } finally {
       setSpotifyLoading(false);
     }
+  }, []);
+
+  // Load pinned items from localStorage on mount
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("tuneheadz.pinnedItems");
+      if (raw) setPinnedItems(JSON.parse(raw) as PinnedItem[]);
+    } catch {
+      // ignore
+    }
+    try {
+      const raw = window.localStorage.getItem("tuneheadz.favoriteGenres");
+      if (raw) setFavoriteGenres(JSON.parse(raw) as string[]);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const savePinned = (items: PinnedItem[]) => {
+    setPinnedItems(items);
+    try {
+      window.localStorage.setItem("tuneheadz.pinnedItems", JSON.stringify(items));
+    } catch {
+      // ignore
+    }
+  };
+
+  const pinItem = (item: PinnedItem) => {
+    if (pinnedItems.length >= 8) return;
+    if (pinnedItems.some((p) => p.id === item.id)) return;
+    savePinned([...pinnedItems, item]);
+  };
+
+  const unpinItem = (id: string) => {
+    savePinned(pinnedItems.filter((p) => p.id !== id));
+  };
+
+  const searchSongs = useCallback((q: string) => {
+    if (songDebounceRef.current) clearTimeout(songDebounceRef.current);
+    if (!q.trim()) { setSongResults([]); setSongSearchError(null); setSongSearching(false); return; }
+    setSongSearching(true);
+    setSongSearchError(null);
+    songDebounceRef.current = setTimeout(async () => {
+      songAbortRef.current?.abort();
+      const controller = new AbortController();
+      songAbortRef.current = controller;
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&type=track&limit=8`, { signal: controller.signal });
+        if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as { error?: string };
+          setSongSearchError(body.error ?? `Search failed (${res.status})`);
+          setSongResults([]);
+        } else {
+          const data = (await res.json()) as { tracks: SpotifySearchTrack[] };
+          setSongResults(data.tracks ?? []);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
+        setSongSearchError("Search failed. Please try again.");
+      } finally {
+        setSongSearching(false);
+      }
+    }, 350);
+  }, []);
+
+  const searchAlbums = useCallback((q: string) => {
+    if (albumDebounceRef.current) clearTimeout(albumDebounceRef.current);
+    if (!q.trim()) { setAlbumResults([]); setAlbumSearchError(null); setAlbumSearching(false); return; }
+    setAlbumSearching(true);
+    setAlbumSearchError(null);
+    albumDebounceRef.current = setTimeout(async () => {
+      albumAbortRef.current?.abort();
+      const controller = new AbortController();
+      albumAbortRef.current = controller;
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&type=album&limit=8`, { signal: controller.signal });
+        if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as { error?: string };
+          setAlbumSearchError(body.error ?? `Search failed (${res.status})`);
+          setAlbumResults([]);
+        } else {
+          const data = (await res.json()) as { albums: SpotifySearchAlbum[] };
+          setAlbumResults(data.albums ?? []);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
+        setAlbumSearchError("Search failed. Please try again.");
+      } finally {
+        setAlbumSearching(false);
+      }
+    }, 350);
   }, []);
 
   const disconnectSpotify = useCallback(async () => {
@@ -439,23 +578,46 @@ export default function ProfilePage() {
               {activeTab === "Profile" ? (
                 <>
                   <div>
-                <h3 className="border-b border-[#2a3344] pb-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#8ea1bb]">
-                  Favorite Albums
+                <h3 className="flex items-center justify-between border-b border-[#2a3344] pb-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#8ea1bb]">
+                  <span className="flex items-center gap-1.5"><Pin size={13} className="text-[#fb3d93]" /> Pinned Albums &amp; Songs</span>
+                  <button
+                    type="button"
+                    onClick={() => { setShowPinSearch(true); setPinTab("songs"); setSongQuery(""); setSongResults([]); setSongSearchError(null); setAlbumQuery(""); setAlbumResults([]); setAlbumSearchError(null); }}
+                    className="flex items-center gap-1 rounded-md border border-[#3a4f6b] bg-[#131d2b] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9fb0c7] transition hover:border-[#fb3d93]/70 hover:text-white"
+                  >
+                    <Search size={11} /> Add
+                  </button>
                 </h3>
-                {favorites.length === 0 ? (
+                {pinnedItems.length === 0 ? (
                   <p className="pt-3 text-sm text-[#9fb0c7]">
-                    No favorites yet. Save albums/tracks and they will appear here.
+                    No pinned items yet.{" "}
+                    <button
+                      type="button"
+                      onClick={() => { setShowPinSearch(true); setPinTab("songs"); setSongQuery(""); setSongResults([]); setSongSearchError(null); setAlbumQuery(""); setAlbumResults([]); setAlbumSearchError(null); }}
+                      className="text-[#fb3d93] hover:underline"
+                    >
+                      Search to add albums or songs.
+                    </button>
                   </p>
                 ) : (
                   <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    {favorites.slice(0, 4).map((item) => (
-                      <div key={item.id}>
+                    {pinnedItems.map((item) => (
+                      <div key={item.id} className="group relative">
                         <img
                           src={item.imageUrl || "https://placehold.co/240x240/101827/3a4a64?text=Album"}
-                          alt={item.trackName}
+                          alt={item.name}
                           className="aspect-square w-full rounded-md border border-[#2a3344] object-cover"
                         />
-                        <p className="mt-1 truncate text-xs text-[#c3d1e3]">{item.trackName}</p>
+                        <button
+                          type="button"
+                          onClick={() => unpinItem(item.id)}
+                          className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition group-hover:opacity-100 hover:text-[#fb3d93]"
+                          title="Unpin"
+                        >
+                          <X size={12} />
+                        </button>
+                        <p className="mt-1 truncate text-xs text-[#c3d1e3]">{item.name}</p>
+                        <p className="truncate text-[10px] text-[#7e94b2]">{item.subtitle}</p>
                       </div>
                     ))}
                   </div>
@@ -711,6 +873,14 @@ export default function ProfilePage() {
             </section>
 
             <aside className="space-y-6">
+              {user.bio ? (
+                <div>
+                  <h4 className="border-b border-[#2a3344] pb-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#fb3d93]">
+                    Bio
+                  </h4>
+                  <p className="pt-3 text-xs leading-relaxed text-[#9fb0c7]">{user.bio}</p>
+                </div>
+              ) : null}
               <div>
                 <h4 className="flex items-center justify-between border-b border-[#2a3344] pb-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#fb3d93]">
                   Ratings
@@ -726,21 +896,49 @@ export default function ProfilePage() {
                   </div>
                 )}
               </div>
-              <PosterStrip
-                title="Recent Lists"
-                subtitle={String(lists.length)}
-                covers={[]}
-              />
-              <PosterStrip
-                title="Favorites"
-                subtitle={`${favorites.length} tracks`}
-                covers={favorites.map((item) => item.imageUrl).filter(Boolean) as string[]}
-              />
-              <PosterStrip
-                title="Top R&B Picks"
-                subtitle="0 albums"
-                covers={[]}
-              />
+              <div>
+                <h4 className="flex items-center justify-between border-b border-[#2a3344] pb-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#fb3d93]">
+                  Favorite Genres
+                  <button
+                    type="button"
+                    onClick={() => setShowGenrePicker(true)}
+                    className="text-[10px] tracking-[0.12em] text-[#7e94b2] hover:text-white transition-colors"
+                  >
+                    Edit
+                  </button>
+                </h4>
+                {favoriteGenres.length === 0 ? (
+                  <p className="pt-3 text-xs text-[#9fb0c7]">
+                    No genres yet.{" "}
+                    <button type="button" onClick={() => setShowGenrePicker(true)} className="text-[#fb3d93] hover:underline">
+                      Add some.
+                    </button>
+                  </p>
+                ) : (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {favoriteGenres.map((slug) => {
+                      if (slug.startsWith("custom:")) {
+                        const label = slug.slice(7);
+                        return (
+                          <span key={slug} className="rounded-full bg-gradient-to-r from-[#3a2a4a] to-[#2a3a4a] px-2.5 py-0.5 text-[11px] font-semibold text-white">
+                            {label}
+                          </span>
+                        );
+                      }
+                      const genre = GENRE_CARDS.find((g) => g.slug === slug);
+                      if (!genre) return null;
+                      return (
+                        <span
+                          key={slug}
+                          className={`rounded-full bg-gradient-to-r ${genre.gradient} px-2.5 py-0.5 text-[11px] font-semibold text-white`}
+                        >
+                          {genre.title}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
               <div>
                 <h4 className="border-b border-[#2a3344] pb-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#fb3d93]">
                   Activity
@@ -761,6 +959,237 @@ export default function ProfilePage() {
           </div>
         </div>
       </section>
+
+      {/* Genre picker modal */}
+      {showGenrePicker ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setShowGenrePicker(false)}>
+          <div
+            className="w-full max-w-sm rounded-xl border border-[#2a3344] bg-[#0d1420] shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#2a3344] px-4 py-3">
+              <h2 className="text-sm font-semibold text-white">Favorite Genres</h2>
+              <button type="button" onClick={() => setShowGenrePicker(false)} className="flex h-7 w-7 items-center justify-center rounded-full text-[#9fb0c7] hover:text-white">
+                <X size={16} />
+              </button>
+            </div>
+            <p className="px-4 pt-3 text-xs text-[#7e94b2]">Select up to 6 genres.</p>
+            <div className="grid grid-cols-2 gap-2 px-4 py-3">
+              {GENRE_CARDS.map((genre) => {
+                const selected = favoriteGenres.includes(genre.slug);
+                return (
+                  <button
+                    key={genre.slug}
+                    type="button"
+                    disabled={!selected && favoriteGenres.length >= 6}
+                    onClick={() => {
+                      const next = selected
+                        ? favoriteGenres.filter((s) => s !== genre.slug)
+                        : [...favoriteGenres, genre.slug];
+                      setFavoriteGenres(next);
+                      try { window.localStorage.setItem("tuneheadz.favoriteGenres", JSON.stringify(next)); } catch { /* ignore */ }
+                    }}
+                    className={`flex items-center justify-between rounded-lg bg-gradient-to-r ${genre.gradient} px-3 py-2 text-xs font-semibold text-white transition-opacity ${selected ? "opacity-100 ring-2 ring-white/60" : "opacity-60 hover:opacity-90 disabled:opacity-30"}`}
+                  >
+                    {genre.title}
+                    {selected ? <span className="text-white/80">✓</span> : null}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Custom genre input */}
+            <div className="border-t border-[#2a3344] px-4 py-3">
+              <p className="mb-2 text-xs text-[#7e94b2]">Don&apos;t see your favorite? Type your own:</p>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const val = customGenreInput.trim();
+                  if (!val || favoriteGenres.length >= 6) return;
+                  const slug = `custom:${val}`;
+                  if (favoriteGenres.includes(slug)) return;
+                  const next = [...favoriteGenres, slug];
+                  setFavoriteGenres(next);
+                  try { window.localStorage.setItem("tuneheadz.favoriteGenres", JSON.stringify(next)); } catch { /* ignore */ }
+                  setCustomGenreInput("");
+                }}
+                className="flex gap-2"
+              >
+                <input
+                  type="text"
+                  value={customGenreInput}
+                  onChange={(e) => setCustomGenreInput(e.target.value)}
+                  placeholder="e.g. Bossa Nova, Gospel, Punk…"
+                  maxLength={30}
+                  disabled={favoriteGenres.length >= 6}
+                  className="flex-1 rounded-lg border border-[#2a3344] bg-[#111827] px-3 py-1.5 text-xs text-white placeholder-[#7e94b2] outline-none focus:border-[#fb3d93]/60 disabled:opacity-40"
+                />
+                <button
+                  type="submit"
+                  disabled={!customGenreInput.trim() || favoriteGenres.length >= 6}
+                  className="rounded-lg border border-[#3a4f6b] bg-[#131d2b] px-3 py-1.5 text-xs font-semibold text-[#9fb0c7] transition hover:border-[#fb3d93]/70 hover:text-white disabled:opacity-40"
+                >
+                  Add
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Pin search modal */}
+      {showPinSearch ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setShowPinSearch(false)}>
+          <div
+            className="w-full max-w-lg rounded-xl border border-[#2a3344] bg-[#0d1420] shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-[#2a3344] px-4 py-3">
+              <h2 className="text-sm font-semibold text-white">Pin Albums &amp; Songs</h2>
+              <button
+                type="button"
+                onClick={() => setShowPinSearch(false)}
+                className="flex h-7 w-7 items-center justify-center rounded-full text-[#9fb0c7] hover:text-white"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex border-b border-[#2a3344]">
+              {(["songs", "albums"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setPinTab(tab)}
+                  className={`flex-1 py-2.5 text-xs font-semibold uppercase tracking-[0.12em] transition-colors ${
+                    pinTab === tab
+                      ? "border-b-2 border-[#fb3d93] text-white"
+                      : "text-[#9fb0c7] hover:text-white"
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            {/* Songs tab */}
+            {pinTab === "songs" ? (
+              <>
+                <div className="px-4 pt-3">
+                  <div className="flex items-center gap-2 rounded-lg border border-[#2a3344] bg-[#111827] px-3 py-2">
+                    <Search size={14} className="shrink-0 text-[#9fb0c7]" />
+                    <input
+                      type="text"
+                      placeholder="Search for a song…"
+                      value={songQuery}
+                      autoFocus
+                      className="flex-1 bg-transparent text-sm text-white placeholder-[#7e94b2] outline-none"
+                      onChange={(e) => { setSongQuery(e.target.value); searchSongs(e.target.value); }}
+                    />
+                    {songSearching ? <span className="text-[10px] text-[#7e94b2]">Searching…</span> : null}
+                  </div>
+                </div>
+                <div className="max-h-80 overflow-y-auto px-4 py-3">
+                  {songSearchError ? (
+                    <p className="text-center text-sm text-red-400">{songSearchError}</p>
+                  ) : songResults.length === 0 && songQuery.trim() && !songSearching ? (
+                    <p className="text-center text-sm text-[#9fb0c7]">No songs found.</p>
+                  ) : (
+                    <ul className="space-y-1">
+                      {songResults.map((track) => {
+                        const alreadyPinned = pinnedItems.some((p) => p.id === track.id);
+                        return (
+                          <li key={track.id}>
+                            <button
+                              type="button"
+                              disabled={alreadyPinned || pinnedItems.length >= 8}
+                              onClick={() => pinItem({ id: track.id, name: track.name, subtitle: track.artists.map((a) => a.name).join(", "), imageUrl: track.album.images[0]?.url ?? "", type: "track", spotifyUrl: track.external_urls.spotify })}
+                              className="flex w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-[#1a2537] disabled:opacity-50"
+                            >
+                              <img src={track.album.images[0]?.url || "https://placehold.co/40x40/101827/3a4a64?text=♫"} alt={track.name} className="h-10 w-10 shrink-0 rounded object-cover" />
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium text-white">{track.name}</p>
+                                <p className="truncate text-xs text-[#9fb0c7]">{track.artists.map((a) => a.name).join(", ")} · {track.album.name}</p>
+                              </div>
+                              {alreadyPinned ? (
+                                <span className="shrink-0 text-[10px] text-[#fb3d93]">Pinned</span>
+                              ) : (
+                                <span className="shrink-0 text-[10px] text-[#9fb0c7]">+ Pin</span>
+                              )}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              </>
+            ) : null}
+
+            {/* Albums tab */}
+            {pinTab === "albums" ? (
+              <>
+                <div className="px-4 pt-3">
+                  <div className="flex items-center gap-2 rounded-lg border border-[#2a3344] bg-[#111827] px-3 py-2">
+                    <Search size={14} className="shrink-0 text-[#9fb0c7]" />
+                    <input
+                      type="text"
+                      placeholder="Search for an album…"
+                      value={albumQuery}
+                      autoFocus
+                      className="flex-1 bg-transparent text-sm text-white placeholder-[#7e94b2] outline-none"
+                      onChange={(e) => { setAlbumQuery(e.target.value); searchAlbums(e.target.value); }}
+                    />
+                    {albumSearching ? <span className="text-[10px] text-[#7e94b2]">Searching…</span> : null}
+                  </div>
+                </div>
+                <div className="max-h-80 overflow-y-auto px-4 py-3">
+                  {albumSearchError ? (
+                    <p className="text-center text-sm text-red-400">{albumSearchError}</p>
+                  ) : albumResults.length === 0 && albumQuery.trim() && !albumSearching ? (
+                    <p className="text-center text-sm text-[#9fb0c7]">No albums found.</p>
+                  ) : (
+                    <ul className="space-y-1">
+                      {albumResults.map((album) => {
+                        const alreadyPinned = pinnedItems.some((p) => p.id === album.id);
+                        return (
+                          <li key={album.id}>
+                            <button
+                              type="button"
+                              disabled={alreadyPinned || pinnedItems.length >= 8}
+                              onClick={() => pinItem({ id: album.id, name: album.name, subtitle: album.artists.map((a) => a.name).join(", "), imageUrl: album.images[0]?.url ?? "", type: "album", spotifyUrl: album.external_urls.spotify })}
+                              className="flex w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-[#1a2537] disabled:opacity-50"
+                            >
+                              <img src={album.images[0]?.url || "https://placehold.co/40x40/101827/3a4a64?text=♫"} alt={album.name} className="h-10 w-10 shrink-0 rounded object-cover" />
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium text-white">{album.name}</p>
+                                <p className="truncate text-xs text-[#9fb0c7]">{album.artists.map((a) => a.name).join(", ")}</p>
+                              </div>
+                              {alreadyPinned ? (
+                                <span className="shrink-0 text-[10px] text-[#fb3d93]">Pinned</span>
+                              ) : (
+                                <span className="shrink-0 text-[10px] text-[#9fb0c7]">+ Pin</span>
+                              )}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              </>
+            ) : null}
+
+            {pinnedItems.length >= 8 ? (
+              <p className="border-t border-[#2a3344] px-4 py-2 text-center text-xs text-[#fb3d93]">
+                Max 8 pinned items reached. Unpin something first.
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

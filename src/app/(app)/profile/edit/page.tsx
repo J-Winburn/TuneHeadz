@@ -161,28 +161,6 @@ export default function EditProfilePage() {
                 {saving ? "Saving..." : "Save Changes"}
               </button>
             </div>
-
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#8ea1bb]">
-                Favorite Music
-              </p>
-              <div className="rounded-lg border border-[#2b2030] bg-[#111521] p-4">
-                <div className="grid grid-cols-4 gap-3">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      className="group aspect-[2/3] rounded-md border border-[#343247] bg-[#252b3a] text-[#8d9bb3] transition hover:border-[#fb3d93]/60 hover:text-[#ffd4e9]"
-                    >
-                      <span className="text-2xl leading-none">+</span>
-                    </button>
-                  ))}
-                </div>
-                <p className="mt-3 text-xs text-[#8ea1bb]">
-                  Add up to 4 favorite album covers to show on your profile.
-                </p>
-              </div>
-            </div>
           </form>
         </div>
       </section>
